@@ -1,7 +1,10 @@
-vite app mit vanilla js template
+## getting started
 
 ```bash
-npm create vite@latest
+# install dependencies
+npm i
+# run devserver
+npm run dev
 ```
 
 ## links
