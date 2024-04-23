@@ -1,24 +1,37 @@
 import * as OBC from "openbim-components";
 import { createConsola } from "consola";
 
-interface StreamedGeometries {
-  assets: {
+type StreamedGeometries = {
+  assets: Array<{
     id: number;
-    geometries: {
+    geometries: Array<{
       color: number[];
       geometryID: number;
       transformation: number[];
-    }[];
-  }[];
+    }>;
+  }>;
   geometries: {
     [id: number]: {
-      boundingBox: { [id: number]: number };
+      boundingBox: Record<number, number>;
       hasHoles: boolean;
-      geometryFile: "url-to-geometry-file-in-your-backend";
+      geometryFile: string;
     };
   };
-  globalDataFileId: "url-to-fragments-group-file-in-your-backend";
-}
+  globalDataFileId: string;
+};
+
+type StreamedProperties = {
+  types: Record<number, number[]>;
+  ids: Record<
+    number,
+    {
+      boundingBox: Record<number, number>;
+      hasHoles: boolean;
+      geometryFile: string; // "url-to-geometry-file-in-your-backend";
+    }
+  >;
+  indexesFile: string; // "url-to-indexes-file-in-your-backend";
+};
 
 const logger = createConsola({
   defaults: {
@@ -49,54 +62,58 @@ export function setup() {
 
 async function convert(file: File) {
   logger.log("converting");
-  const ifcBuffer = await file.arrayBuffer();
-
-  const components = new OBC.Components();
-
-  const streamer = new OBC.FragmentIfcStreamConverter(components);
+  const streamer = new OBC.FragmentIfcStreamConverter(new OBC.Components());
   streamer.settings.wasm = {
     path: "https://unpkg.com/web-ifc@0.0.51/",
     absolute: true,
   };
 
+  const streamedGeometries: StreamedGeometries = {
+    assets: [],
+    geometries: {},
+    // TODO: ??? where do i get the group file
+    globalDataFileId: "url-to-fragments-group-file-in-your-backend",
+  };
+
+  const geometryFiles: { file: Uint8Array; name: string }[] = [];
+
   streamer.onGeometryStreamed.add((geometry) => {
-    logger.success("onGeometryStreamed", geometry);
+    const fileName = `${crypto.randomUUID()}.ifc-geometry`;
+    geometryFiles.push({
+      file: geometry.buffer,
+      name: fileName,
+    });
+
+    for (const id in geometry.data) {
+      const geometryData = geometry.data[id];
+      streamedGeometries.geometries[id] = {
+        boundingBox: geometryData.boundingBox,
+        hasHoles: geometryData.hasHoles,
+        geometryFile: fileName,
+      };
+    }
   });
 
   streamer.onAssetStreamed.add((assets) => {
-    logger.success("onAssetsStreamed", assets);
+    logger.log("onAssetsStreamed", assets);
   });
 
   streamer.onIfcLoaded.add(async (groupBuffer) => {
-    logger.success("onIfcLoaded", groupBuffer);
+    logger.log("onIfcLoaded", groupBuffer);
   });
 
-  streamer.onProgress.add((progress) => {
-    logger.log("progress", progress);
+  const progressEl = document.getElementById("progress") as HTMLProgressElement;
+
+  streamer.onProgress.add((value) => {
+    progressEl.value = value * 100;
+    if (value === 1) {
+      handleStreamCompleted();
+    }
   });
 
-  streamer.streamFromBuffer(new Uint8Array(ifcBuffer));
+  function handleStreamCompleted() {
+    logger.success("stream completed", geometryFiles, streamedGeometries);
+  }
 
-  // streaming properties
-  /*
-  const propsStreamer = new OBC.FragmentPropsStreamConverter(components);
-  propsStreamer.settings.wasm = {
-    path: "https://unpkg.com/web-ifc@0.0.51/",
-    absolute: true,
-  };
-
-  propsStreamer.onPropertiesStreamed.add(async (props) => {
-    logger.log("onPropertiesStreamed", props);
-  });
-
-  propsStreamer.onProgress.add(async (progress) => {
-    logger.log("props progress", progress);
-  });
-
-  propsStreamer.onIndicesStreamed.add(async (props) => {
-    logger.log("onIndicesStreamed", props);
-  });
-
-  streamer.streamFromBuffer(new Uint8Array(ifcBuffer));
-  */
+  streamer.streamFromBuffer(new Uint8Array(await file.arrayBuffer()));
 }
