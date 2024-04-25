@@ -4,6 +4,7 @@ import { createTar } from "nanotar";
 
 type GeometryPartFileId = `${string}.ifc-processed-geometries-${number}`;
 type GlobalDataFileId = `${string}.ifc-processed-global`;
+type IfcProcessedFileId = `${string}.ifc-processed.json`;
 
 type StreamedGeometries = {
   assets: Array<{
@@ -112,12 +113,16 @@ export async function convertToStreamable(ifcFile: File) {
     logger.info("geometryFiles", geometryFiles);
     logger.info("streamedGeometries", streamedGeometries);
 
-    const tar = createTar(
-      geometryFiles.map(({ content, name, originalName }) => ({
-        name: `${originalName}/${name}`,
+    const tar = createTar([
+      ...geometryFiles.map(({ content, name }) => ({
+        name: `${ifcFile.name}/${name}`,
         data: content,
       })),
-    );
+      {
+        name: `${ifcFile.name}/${fileUUID}.ifc-processed.json`,
+        data: JSON.stringify(streamedGeometries),
+      },
+    ]);
 
     await saveFile(new Blob([tar]), `${ifcFile.name}.tar`);
   });
