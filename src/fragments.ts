@@ -64,7 +64,7 @@ async function convert(file: File) {
   logger.log("converting");
   const streamer = new OBC.FragmentIfcStreamConverter(new OBC.Components());
   streamer.settings.wasm = {
-    path: "https://unpkg.com/web-ifc@0.0.51/",
+    path: "https://unpkg.com/web-ifc@0.0.53/",
     absolute: true,
   };
 
