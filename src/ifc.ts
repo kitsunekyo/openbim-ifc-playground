@@ -1,5 +1,6 @@
 import * as OBC from "openbim-components";
 import { createConsola } from "consola/browser";
+import { createTar } from "nanotar";
 
 type GeometryPartFileId = `${string}.ifc-processed-geometries-${number}`;
 type GlobalDataFileId = `${string}.ifc-processed-global`;
@@ -110,6 +111,15 @@ export async function convertToStreamable(ifcFile: File) {
     logger.success("onIfcLoaded complete", performance.now());
     logger.info("geometryFiles", geometryFiles);
     logger.info("streamedGeometries", streamedGeometries);
+
+    const tar = createTar(
+      geometryFiles.map(({ content, name, originalName }) => ({
+        name: `${originalName}/${name}`,
+        data: content,
+      })),
+    );
+
+    await saveFile(new Blob([tar]), `${ifcFile.name}.tar`);
   });
 
   const progressEl = document.getElementById("progress") as HTMLProgressElement;
@@ -125,4 +135,19 @@ export async function convertToStreamable(ifcFile: File) {
   });
 
   streamer.streamFromBuffer(new Uint8Array(await ifcFile.arrayBuffer()));
+}
+
+async function saveFile(blob: Blob, name?: string) {
+  // https://developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker#browser_compatibility
+  // @ts-ignore
+  const newHandle = await window.showSaveFilePicker({
+    startIn: "downloads",
+    suggestedName: name,
+    types: [
+      { description: "Tar archive", accept: { "application/x-tar": [".tar"] } },
+    ],
+  });
+  const writableStream = await newHandle.createWritable();
+  await writableStream.write(blob);
+  await writableStream.close();
 }
