@@ -1,8 +1,10 @@
 import * as OBC from "openbim-components";
 import * as THREE from "three";
 
-const MODEL_PATH = "http://localhost:3000/TESTED_Simple_project_01.ifc/";
-const MODEL_UUID = "1baa82a7-0388-49f5-bb9e-4d4791c4a30f";
+const SERVER_URL = "http://localhost:8080/";
+const MODEL_UUID = "f2c30224-b175-409b-b8fb-94f76d8a75f4";
+const MODEL_NAME = "200226_FH2_Tragwerk_IFC4_Design.ifc";
+const BASE_URL = `${SERVER_URL}/${MODEL_UUID}/`;
 
 /**
  * @param path - path to the *.ifc-processed.json file
@@ -32,7 +34,7 @@ export function start() {
 
   const loader = new OBC.FragmentStreamLoader(components);
   loader.useCache = true;
-  loader.url = MODEL_PATH;
+  loader.url = BASE_URL;
 
   camera.controls.addEventListener("controlend", () => {
     loader.culler.needsUpdate = true;
@@ -43,7 +45,7 @@ export function start() {
   loader.culler.maxLostTime = 40000;
 
   components.init();
-  scene.setup(); // add lights
+  scene.setup(); // adds lights
 
-  loadModel(loader, `${MODEL_PATH}${MODEL_UUID}.ifc-processed.json`);
+  loadModel(loader, `${BASE_URL}/${MODEL_NAME}.ifc-processed.json`);
 }

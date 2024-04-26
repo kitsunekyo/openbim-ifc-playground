@@ -7,11 +7,11 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 8080",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "format": "prettier src/ --write",
-    "serve": "serve server --cors"
+    "serve": "serve serve --cors -l 8888"
   },
   "devDependencies": {
     "@types/three": "^0.163.0",

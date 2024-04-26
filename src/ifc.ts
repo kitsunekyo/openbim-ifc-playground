@@ -33,6 +33,8 @@ const logger = createConsola({
 
 export async function convertToStreamable(ifcFile: File) {
   const fileUUID = crypto.randomUUID();
+  const fileName = ifcFile.name.replace(/\s/g, "_");
+
   logger.log("converting");
   const converter = new OBC.FragmentIfcStreamConverter(new OBC.Components());
   converter.settings.wasm = {
@@ -43,13 +45,12 @@ export async function convertToStreamable(ifcFile: File) {
   const streamedGeometries: StreamedGeometries = {
     assets: [],
     geometries: {},
-    globalDataFileId: `${fileUUID}.ifc-processed-global`,
+    globalDataFileId: `${fileName}.ifc-processed-global`,
   };
 
   const geometryFiles: {
     content: Uint8Array;
     name: GeometryPartFileId | GlobalDataFileId;
-    originalName: string;
   }[] = [];
 
   let geometryIndex = 0;
@@ -57,12 +58,11 @@ export async function convertToStreamable(ifcFile: File) {
   converter.onGeometryStreamed.add(({ buffer, data }) => {
     logger.log("onGeometryStreamed");
 
-    const geometryFileId: GeometryPartFileId = `${fileUUID}.ifc-processed-geometries-${geometryIndex}`;
+    const geometryFileId: GeometryPartFileId = `${fileName}.ifc-processed-geometries-${geometryIndex}`;
 
     geometryFiles.push({
       content: buffer,
       name: geometryFileId,
-      originalName: ifcFile.name,
     });
 
     for (const id in data) {
@@ -93,7 +93,6 @@ export async function convertToStreamable(ifcFile: File) {
     geometryFiles.push({
       name: streamedGeometries.globalDataFileId,
       content: globalFile,
-      originalName: ifcFile.name,
     });
 
     logger.success("onIfcLoaded complete");
@@ -102,11 +101,11 @@ export async function convertToStreamable(ifcFile: File) {
 
     const tar = createTar([
       ...geometryFiles.map(({ content, name }) => ({
-        name: `${ifcFile.name}/${name}`,
+        name: `${fileUUID}/${name}`,
         data: content,
       })),
       {
-        name: `${ifcFile.name}/${fileUUID}.ifc-processed.json` satisfies IfcProcessedFileId,
+        name: `${fileUUID}/${fileName}.ifc-processed.json` satisfies IfcProcessedFileId,
         data: JSON.stringify(streamedGeometries),
       },
     ]);

@@ -25,24 +25,26 @@ Select an ifc file and hit submit. The file will be converted and the browser wi
 
 ## Save the file
 
-Save the tar archive from the previous step and extract it somewhere. Copy the folder to `./serve/`.
-You should now have a folder `./serve/TESTED_Simple_project_01.ifc/`, which contains the json and geometry files.
+Save the tar archive from the previous step and extract it somewhere.
+You will see a structure like this `0000-0000-0000-0000/[original_filename.ifc].ifc-processed.json`.
 
-To mock a basic backend server to host our files, use `serve`.
+> Whitespaces in the original filename are replaced with _ to prevent encoding issues.
+
+Copy the uuid folder (eg. `f2c30224-b175-409b-b8fb-94f76d8a75f4`) to `./serve/`.
+
+Serve our files from `./serve/` statically, with cors enabled.
 
 ```bash
 npm run serve
 ```
 
-This will serve all files from `./serve/` statically, with cors enabled.
-
 ## Load the model into the viewer
 
-Open `./src/viewer.ts` and change `MODEL_PATH` to our folder name. `MODEL_UUID` is the generated uuid from your individual files.
+Open `./src/viewer.ts` and change `MODEL_NAME` to the filename (whitespaces are replaced with _). Change `MODEL_UUID` to the generated uuid of the generated folder.
 
 ```ts
-const MODEL_PATH = "http://localhost:3000/TESTED_Simple_project_01.ifc/";
-const MODEL_UUID = "1baa82a7-0388-49f5-bb9e-4d4791c4a30f";
+const MODEL_UUID = "f2c30224-b175-409b-b8fb-94f76d8a75f4";
+const MODEL_NAME = "200226_FH2_Tragwerk_IFC4_Design.ifc";
 ```
 
 Click the "stream model from path" button. The model should now load in the viewer.
