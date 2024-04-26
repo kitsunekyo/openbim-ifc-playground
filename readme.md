@@ -30,7 +30,7 @@ You will see a structure like this `0000-0000-0000-0000/[original_filename.ifc].
 
 > Whitespaces in the original filename are replaced with _ to prevent encoding issues.
 
-Copy the uuid folder (eg. `f2c30224-b175-409b-b8fb-94f76d8a75f4`) to `./serve/`.
+Copy the uuid folder (eg. `f2c30224-b175-409b-b8fb-94f76d8a75f4`) to the `./serve/` folder in the root of this repo.
 
 Serve our files from `./serve/` statically, with cors enabled.
 
