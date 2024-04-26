@@ -1,13 +1,15 @@
 import * as OBC from "openbim-components";
 import * as THREE from "three";
 
-const SERVER_URL = "http://localhost:8888";
+const BASE_URL = "http://localhost:8888";
+const MODEL_UUID = import.meta.env.VITE_MODEL_UUID;
+const MODEL_NAME = import.meta.env.VITE_MODEL_NAME;
 
-// replace these values to load different models
-const MODEL_UUID = "f5cac56e-297f-42e9-ab61-98c8722b553a";
-const MODEL_NAME = "TESTED_Simple_project_01.ifc";
+if (!MODEL_UUID || !MODEL_NAME) {
+  throw new Error("MODEL_UUID and MODEL_NAME must be set in .env");
+}
 
-const BASE_URL = `${SERVER_URL}/${MODEL_UUID}`;
+const MODEL_URL = `${BASE_URL}/${MODEL_UUID}`;
 
 /**
  * @param path - path to the *.ifc-processed.json file
@@ -46,10 +48,10 @@ export function start() {
 
   const loader = new OBC.FragmentStreamLoader(components);
   loader.useCache = true;
-  loader.url = `${BASE_URL}/`;
+  loader.url = `${MODEL_URL}/`;
   loader.culler.threshold = 20;
   loader.culler.maxHiddenTime = 1000;
   loader.culler.maxLostTime = 40000;
 
-  loadModel(loader, `${BASE_URL}/${MODEL_NAME}.ifc-processed.json`);
+  loadModel(loader, `${MODEL_URL}/${MODEL_NAME}.ifc-processed.json`);
 }

@@ -119,10 +119,10 @@ export async function convertToStreamable(ifcFile: File) {
       throw new Error('Element with id "info" not found');
     }
     infoEl.innerHTML = `
-      <p>Files generated! Replace <code>MODEL_UUID</code> and <code>MODEL_NAME</code> in <code>src/viewer.ts</code></p>
+      <p>Files generated! Change <code>VITE_MODEL_UUID</code> and <code>VITE_MODEL_NAME</code> in your <code>.env</code> file.</p>
       <pre>
-        const MODEL_UUID = "${fileUUID}";
-        const MODEL_NAME = "${fileName}";
+VITE_MODEL_UUID="${fileUUID}"
+VITE_MODEL_NAME="${fileName}"
       </pre>
     `;
   });

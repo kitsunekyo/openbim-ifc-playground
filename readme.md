@@ -29,9 +29,11 @@ The app converts an ifc file to the necessary files for streaming:
 3. The browser will ask you to select a folder where the app can write the converted directories / files.
 4. Navigate to the directory of this repository and press "Select folder", to select it as destination.
 
-> If you can't browse to the repo folder, because its not on your OS file system (eg. when using WSL2), select the "Downloads" folder as directory. After the conversion is complete, copy the `serve` folder to your repo.
+> If you can't browse to the repo folder, because its not on your OS file system (eg. when using WSL2), select the "Downloads" folder as directory. After the conversion is complete, copy the `serve` folder and all contents to your repo.
 
 This will create a `serve` directory in the selected directory, if there isn't one yet. For each conversion it will also create a new directory with a UUID to prevent naming conflicts. Inside this directory you will find all geometry and json files.
+
+> Note that for 1.5GB files this can take 45 minutes.
 
 ### Start the geometry server
 
@@ -43,11 +45,17 @@ This will run a static webserver, that serves all files from the `serve/` folder
 
 ### Stream the model into the viewer
 
-Open `./src/viewer.ts` and change `MODEL_NAME` to the ifc filename (whitespaces are replaced with _). Change `MODEL_UUID` to the generated uuid of the generated folder.
+Create an `.env` file, to configure which model to load.
+
+```bash
+cp .env.example .env
+```
+
+Inside `.env` change `VITE_MODEL_NAME` to the ifc filename (whitespaces are replaced with _). Change `VITE_MODEL_UUID` to the generated uuid of the generated folder. The html page should show you the correct values after the conversion is complete.
 
 ```ts
-const MODEL_UUID = "f2c30224-b175-409b-b8fb-94f76d8a75f4";
-const MODEL_NAME = "200226_FH2_Tragwerk_IFC4_Design.ifc";
+VITE_MODEL_UUID="e04907d4-0fdf-43cf-83d7-4fc80cfe1646"
+VITE_MODEL_NAME="05_large_Model_opening_error_03.ifc"
 ```
 
 Click the "stream model from path" button. The model should now load in the viewer.
