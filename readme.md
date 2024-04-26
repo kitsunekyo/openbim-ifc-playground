@@ -15,9 +15,9 @@ npm run dev
 
 The app converts an ifc file to the necessary files for streaming:
 
-- myFile.ifc-processed.json: settings file for the streamer
-- myFile.ifc-processed-geometries-0: binary geometry partial file. starts at 0 and increments for every geometry partial
-- myFile.ifc-processed-global: binary global geometry file
+- myFile.`ifc-processed.json`: settings file for the streamer
+- myFile.`ifc-processed-geometries-0`: binary geometry partial file. starts at 0 and increments for every geometry partial
+- myFile.`ifc-processed-global`: binary global geometry file
 
 Select an ifc file and hit submit. The file will be converted and the browser will prompt you to download the result.
 
