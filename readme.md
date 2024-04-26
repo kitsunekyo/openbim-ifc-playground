@@ -1,4 +1,4 @@
-# openbim-components playground
+# openbim-components `FragmentIfcStreamConverter` example
 
 This playground allows you to pick an ifc file and have it processed through the `FragmentIfcStreamConverter`. It will create all necessary tile files for streaming.
 
@@ -15,34 +15,35 @@ npm run dev
 
 ### Convert IFC file to tiles
 
+> Use Chrome or Edge. FileSystemAPI isn't supported by all browsers yet.
+
 The app converts an ifc file to the necessary files for streaming:
 
 - myFile.`ifc-processed.json`: settings file for the streamer
-- myFile.`ifc-processed-geometries-0`: binary geometry partial file. starts at 0 and increments for every geometry partial
+- myFile.`ifc-processed-geometries-0`: binary geometry partial file.    
+  Starts at 0 and increments for every geometry partial
 - myFile.`ifc-processed-global`: binary global geometry file
 
-Select an ifc file and hit submit. The file will be converted and the browser will prompt you to download the result.
+1. Press the "Select file" button to Select an ifc file.
+2. Press the "Convert to tiles" button.
+3. The browser will ask you to select a folder where the app can write the converted directories / files.
+4. Navigate to the directory of this repository and press "Select folder", to select it as destination.
 
-> Use Chrome or Edge. Downloading the tar archive is handled through the FileSystemAPI, which hasn't landed in all browsers yet.
+> If you can't browse to the repo folder, because its not on your OS file system (eg. when using WSL2), select the "Downloads" folder as directory. After the conversion is complete, copy the `serve` folder to your repo.
 
-### Save the file
+This will create a `serve` directory in the selected directory, if there isn't one yet. For each conversion it will also create a new directory with a UUID to prevent naming conflicts. Inside this directory you will find all geometry and json files.
 
-Save the tar archive from the previous step and extract it somewhere.
-You will see a structure like this `0000-0000-0000-0000/[original_filename.ifc].ifc-processed.json`.
-
-> Whitespaces in the original filename are replaced with _ to prevent encoding issues.
-
-Copy the uuid folder (eg. `f2c30224-b175-409b-b8fb-94f76d8a75f4`) to the `./serve/` folder in the root of this repo.
-
-Serve our files from `./serve/` statically, with cors enabled.
+### Start the geometry server
 
 ```bash
 npm run serve
 ```
 
+This will run a static webserver, that serves all files from the `serve/` folder inside our repository.
+
 ### Stream the model into the viewer
 
-Open `./src/viewer.ts` and change `MODEL_NAME` to the filename (whitespaces are replaced with _). Change `MODEL_UUID` to the generated uuid of the generated folder.
+Open `./src/viewer.ts` and change `MODEL_NAME` to the ifc filename (whitespaces are replaced with _). Change `MODEL_UUID` to the generated uuid of the generated folder.
 
 ```ts
 const MODEL_UUID = "f2c30224-b175-409b-b8fb-94f76d8a75f4";

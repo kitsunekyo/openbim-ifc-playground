@@ -1,6 +1,7 @@
 import * as OBC from "openbim-components";
 import { createConsola } from "consola/browser";
-import { createTar } from "nanotar";
+
+const WEB_IFC_WASM = "https://unpkg.com/web-ifc@0.0.53/";
 
 type GeometryPartFileId = `${string}.ifc-processed-geometries-${number}`;
 type GlobalDataFileId = `${string}.ifc-processed-global`;
@@ -31,14 +32,43 @@ const logger = createConsola({
   },
 });
 
-export async function convertToStreamable(ifcFile: File) {
+async function createWriter() {
   const fileUUID = crypto.randomUUID();
-  const fileName = ifcFile.name.replace(/\s/g, "_");
+  const directoryHandle = await window.showDirectoryPicker({
+    startIn: "downloads",
+    mode: "readwrite",
+  });
+  const serveDirectoryHandle = await directoryHandle.getDirectoryHandle(
+    "serve",
+    { create: true },
+  );
+  const ifcDirectoryHandle = await serveDirectoryHandle.getDirectoryHandle(
+    fileUUID,
+    {
+      create: true,
+    },
+  );
 
-  logger.log("converting");
+  return async function writeFile(
+    data: FileSystemWriteChunkType,
+    fileName: string,
+  ) {
+    const fileHandle = await ifcDirectoryHandle.getFileHandle(fileName, {
+      create: true,
+    });
+    const writable = await fileHandle.createWritable();
+    await writable.write(data);
+    await writable.close();
+  };
+}
+
+export async function convertToStreamable(ifcFile: File) {
+  const fileName = ifcFile.name.replace(/\s/g, "_");
+  const writeFile = await createWriter();
+
   const converter = new OBC.FragmentIfcStreamConverter(new OBC.Components());
   converter.settings.wasm = {
-    path: "https://unpkg.com/web-ifc@0.0.53/",
+    path: WEB_IFC_WASM,
     absolute: true,
   };
 
@@ -48,22 +78,11 @@ export async function convertToStreamable(ifcFile: File) {
     globalDataFileId: `${fileName}.ifc-processed-global`,
   };
 
-  const geometryFiles: {
-    content: Uint8Array;
-    name: GeometryPartFileId | GlobalDataFileId;
-  }[] = [];
-
   let geometryIndex = 0;
 
-  converter.onGeometryStreamed.add(({ buffer, data }) => {
-    logger.log("onGeometryStreamed");
-
+  converter.onGeometryStreamed.add(async ({ buffer, data }) => {
     const geometryFileId: GeometryPartFileId = `${fileName}.ifc-processed-geometries-${geometryIndex}`;
-
-    geometryFiles.push({
-      content: buffer,
-      name: geometryFileId,
-    });
+    await writeFile(buffer, geometryFileId);
 
     for (const id in data) {
       streamedGeometries.geometries[id] = {
@@ -77,8 +96,6 @@ export async function convertToStreamable(ifcFile: File) {
   });
 
   converter.onAssetStreamed.add((assets) => {
-    logger.log("onAssetsStreamed");
-
     for (const asset of assets) {
       streamedGeometries.assets.push({
         id: asset.id,
@@ -88,29 +105,14 @@ export async function convertToStreamable(ifcFile: File) {
   });
 
   converter.onIfcLoaded.add(async (globalFile) => {
-    logger.log("onIfcLoaded");
-
-    geometryFiles.push({
-      name: streamedGeometries.globalDataFileId,
-      content: globalFile,
-    });
+    await writeFile(globalFile, streamedGeometries.globalDataFileId);
+    await writeFile(
+      JSON.stringify(streamedGeometries),
+      `${fileName}.ifc-processed.json` satisfies IfcProcessedFileId,
+    );
 
     logger.success("onIfcLoaded complete");
-    logger.info("geometryFiles", geometryFiles);
     logger.info("streamedGeometries", streamedGeometries);
-
-    const tar = createTar([
-      ...geometryFiles.map(({ content, name }) => ({
-        name: `${fileUUID}/${name}`,
-        data: content,
-      })),
-      {
-        name: `${fileUUID}/${fileName}.ifc-processed.json` satisfies IfcProcessedFileId,
-        data: JSON.stringify(streamedGeometries),
-      },
-    ]);
-
-    await saveFile(new Blob([tar]), `${ifcFile.name}.tar`);
   });
 
   const progressEl = document.getElementById("progress") as HTMLProgressElement;
@@ -126,19 +128,4 @@ export async function convertToStreamable(ifcFile: File) {
   });
 
   converter.streamFromBuffer(new Uint8Array(await ifcFile.arrayBuffer()));
-}
-
-async function saveFile(blob: Blob, name?: string) {
-  // https://developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker#browser_compatibility
-  // @ts-ignore
-  const newHandle = await window.showSaveFilePicker({
-    startIn: "downloads",
-    suggestedName: name,
-    types: [
-      { description: "Tar archive", accept: { "application/x-tar": [".tar"] } },
-    ],
-  });
-  const writableStream = await newHandle.createWritable();
-  await writableStream.write(blob);
-  await writableStream.close();
 }
