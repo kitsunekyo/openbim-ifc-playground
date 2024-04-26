@@ -53,3 +53,5 @@ Click the "stream model from path" button. The model should now load in the view
 
 https://docs.thatopen.com/Tutorials/FragmentIfcStreamer
 
+![image](https://github.com/kitsunekyo/openbim-ifc-playground/assets/8297816/d1fc7a01-938b-449d-9b2a-902cee3bd761)
+
