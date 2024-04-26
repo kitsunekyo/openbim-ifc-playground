@@ -7,14 +7,21 @@
     <title>ifcjs</title>
   </head>
   <body>
+    <h1>ifcjs fragment streamer</h1>
     <form id="ifcForm">
       <label for="fileInput">
         <span>Pick an IFC File</span>
         <input type="file" id="fileInput" accept=".ifc" />
       </label>
-      <button type="submit">Submit</button>
+      <button type="submit">Convert to tiles</button>
     </form>
     <progress id="progress" value="0" max="100"></progress>
+    <hr />
+    <div
+      id="viewerRoot"
+      style="width: 500px; height: 300px; background-color: #ddd"
+    ></div>
+    <button id="startButton">Stream model from path</button>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

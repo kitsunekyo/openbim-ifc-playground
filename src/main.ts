@@ -1,4 +1,5 @@
 import * as ifc from "./ifc";
+import * as viewer from "./viewer";
 import "./style.css";
 
 (function main() {
@@ -19,4 +20,12 @@ import "./style.css";
     }
     ifc.convertToStreamable(file);
   });
+
+  const startButtonEl = document.getElementById(
+    "startButton",
+  ) as HTMLButtonElement;
+  if (!startButtonEl) {
+    throw new Error('Element with id "startButton" not found');
+  }
+  startButtonEl.addEventListener("click", () => viewer.start());
 })();

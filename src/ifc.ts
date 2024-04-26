@@ -25,19 +25,6 @@ type StreamedGeometries = {
   globalDataFileId: GlobalDataFileId;
 };
 
-type StreamedProperties = {
-  types: Record<number, number[]>;
-  ids: Record<
-    number,
-    {
-      boundingBox: Record<number, number>;
-      hasHoles: boolean;
-      // geometryFile: string; // "url-to-geometry-file-in-your-backend"; -> this is incorrectly documented and doesnt exist
-    }
-  >;
-  indexesFile: string; // "url-to-indexes-file-in-your-backend";
-};
-
 const logger = createConsola({
   defaults: {
     tag: "ifc",
@@ -119,7 +106,7 @@ export async function convertToStreamable(ifcFile: File) {
         data: content,
       })),
       {
-        name: `${ifcFile.name}/${fileUUID}.ifc-processed.json`,
+        name: `${ifcFile.name}/${fileUUID}.ifc-processed.json` satisfies IfcProcessedFileId,
         data: JSON.stringify(streamedGeometries),
       },
     ]);
