@@ -2,7 +2,9 @@
 
 This playground allows you to pick an ifc file and have it processed through the `FragmentIfcStreamConverter`. It will create all necessary tile files for streaming.
 
-## Install dependencies and start the app
+## Use
+
+### Install dependencies and start the web app
 
 ```bash
 # install dependencies
@@ -11,7 +13,7 @@ npm i
 npm run dev
 ```
 
-## Convert IFC File to tiles
+### Convert IFC file to tiles
 
 The app converts an ifc file to the necessary files for streaming:
 
@@ -23,7 +25,7 @@ Select an ifc file and hit submit. The file will be converted and the browser wi
 
 > Use Chrome or Edge. Downloading the tar archive is handled through the FileSystemAPI, which hasn't landed in all browsers yet.
 
-## Save the file
+### Save the file
 
 Save the tar archive from the previous step and extract it somewhere.
 You will see a structure like this `0000-0000-0000-0000/[original_filename.ifc].ifc-processed.json`.
@@ -38,7 +40,7 @@ Serve our files from `./serve/` statically, with cors enabled.
 npm run serve
 ```
 
-## Load the model into the viewer
+### Stream the model into the viewer
 
 Open `./src/viewer.ts` and change `MODEL_NAME` to the filename (whitespaces are replaced with _). Change `MODEL_UUID` to the generated uuid of the generated folder.
 
@@ -49,9 +51,11 @@ const MODEL_NAME = "200226_FH2_Tragwerk_IFC4_Design.ifc";
 
 Click the "stream model from path" button. The model should now load in the viewer.
 
-## links
+## Links
 
 https://docs.thatopen.com/Tutorials/FragmentIfcStreamer
+
+## Screenshot
 
 ![image](https://github.com/kitsunekyo/openbim-ifc-playground/assets/8297816/d1fc7a01-938b-449d-9b2a-902cee3bd761)
 
