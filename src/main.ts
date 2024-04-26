@@ -19,6 +19,7 @@ import "./style.css";
       throw new Error("No file selected");
     }
     ifc.convertToStreamable(file);
+    formEl.reset();
   });
 
   const startButtonEl = document.getElementById(

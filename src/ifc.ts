@@ -32,8 +32,7 @@ const logger = createConsola({
   },
 });
 
-async function createWriter() {
-  const fileUUID = crypto.randomUUID();
+async function createWriter(fileUUID: string) {
   const directoryHandle = await window.showDirectoryPicker({
     startIn: "downloads",
     mode: "readwrite",
@@ -64,7 +63,8 @@ async function createWriter() {
 
 export async function convertToStreamable(ifcFile: File) {
   const fileName = ifcFile.name.replace(/\s/g, "_");
-  const writeFile = await createWriter();
+  const fileUUID = crypto.randomUUID();
+  const writeFile = await createWriter(fileUUID);
 
   const converter = new OBC.FragmentIfcStreamConverter(new OBC.Components());
   converter.settings.wasm = {
@@ -113,6 +113,18 @@ export async function convertToStreamable(ifcFile: File) {
 
     logger.success("onIfcLoaded complete");
     logger.info("streamedGeometries", streamedGeometries);
+
+    const infoEl = document.getElementById("info") as HTMLDivElement;
+    if (!infoEl) {
+      throw new Error('Element with id "info" not found');
+    }
+    infoEl.innerHTML = `
+      <p>Files generated! Replace <code>MODEL_UUID</code> and <code>MODEL_NAME</code> in <code>src/viewer.ts</code></p>
+      <pre>
+        const MODEL_UUID = "${fileUUID}";
+        const MODEL_NAME = "${fileName}";
+      </pre>
+    `;
   });
 
   const progressEl = document.getElementById("progress") as HTMLProgressElement;

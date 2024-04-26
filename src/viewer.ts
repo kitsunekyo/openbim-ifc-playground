@@ -2,8 +2,11 @@ import * as OBC from "openbim-components";
 import * as THREE from "three";
 
 const SERVER_URL = "http://localhost:8888";
-const MODEL_UUID = "f2c30224-b175-409b-b8fb-94f76d8a75f4";
-const MODEL_NAME = "200226_FH2_Tragwerk_IFC4_Design.ifc";
+
+// replace these values to load different models
+const MODEL_UUID = "f5cac56e-297f-42e9-ab61-98c8722b553a";
+const MODEL_NAME = "TESTED_Simple_project_01.ifc";
+
 const BASE_URL = `${SERVER_URL}/${MODEL_UUID}`;
 
 /**
@@ -22,30 +25,31 @@ export function start() {
   }
 
   const components = new OBC.Components();
+
   const scene = new OBC.SimpleScene(components);
   components.scene = scene;
-  components.renderer = new OBC.SimpleRenderer(components, viewerEl);
-  const camera = new OBC.SimpleCamera(components);
-  components.camera = camera;
-  components.raycaster = new OBC.SimpleRaycaster(components);
-  new OBC.SimpleGrid(components, new THREE.Color(0x666666));
+  scene.setup(); // adds lights
 
+  components.renderer = new OBC.SimpleRenderer(components, viewerEl);
+  components.raycaster = new OBC.SimpleRaycaster(components);
+
+  const camera = new OBC.SimpleCamera(components);
   camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
+  camera.controls.addEventListener("controlend", () => {
+    loader.culler.needsUpdate = true;
+  });
+  components.camera = camera;
+
+  new OBC.SimpleGrid(components, new THREE.Color(0x666666)); // has to be loaded after camera
+
+  components.init();
 
   const loader = new OBC.FragmentStreamLoader(components);
   loader.useCache = true;
   loader.url = `${BASE_URL}/`;
-
-  camera.controls.addEventListener("controlend", () => {
-    loader.culler.needsUpdate = true;
-  });
-
   loader.culler.threshold = 20;
   loader.culler.maxHiddenTime = 1000;
   loader.culler.maxLostTime = 40000;
-
-  components.init();
-  scene.setup(); // adds lights
 
   loadModel(loader, `${BASE_URL}/${MODEL_NAME}.ifc-processed.json`);
 }
