@@ -47,8 +47,8 @@ const logger = createConsola({
 export async function convertToStreamable(ifcFile: File) {
   const fileUUID = crypto.randomUUID();
   logger.log("converting");
-  const streamer = new OBC.FragmentIfcStreamConverter(new OBC.Components());
-  streamer.settings.wasm = {
+  const converter = new OBC.FragmentIfcStreamConverter(new OBC.Components());
+  converter.settings.wasm = {
     path: "https://unpkg.com/web-ifc@0.0.53/",
     absolute: true,
   };
@@ -67,7 +67,7 @@ export async function convertToStreamable(ifcFile: File) {
 
   let geometryIndex = 0;
 
-  streamer.onGeometryStreamed.add(({ buffer, data }) => {
+  converter.onGeometryStreamed.add(({ buffer, data }) => {
     logger.log("onGeometryStreamed");
 
     const geometryFileId: GeometryPartFileId = `${fileUUID}.ifc-processed-geometries-${geometryIndex}`;
@@ -89,7 +89,7 @@ export async function convertToStreamable(ifcFile: File) {
     geometryIndex++;
   });
 
-  streamer.onAssetStreamed.add((assets) => {
+  converter.onAssetStreamed.add((assets) => {
     logger.log("onAssetsStreamed");
 
     for (const asset of assets) {
@@ -100,7 +100,7 @@ export async function convertToStreamable(ifcFile: File) {
     }
   });
 
-  streamer.onIfcLoaded.add(async (globalFile) => {
+  converter.onIfcLoaded.add(async (globalFile) => {
     logger.log("onIfcLoaded");
 
     geometryFiles.push({
@@ -132,14 +132,14 @@ export async function convertToStreamable(ifcFile: File) {
     throw new Error('Element with id "progress" not found');
   }
 
-  streamer.onProgress.add((value) => {
+  converter.onProgress.add((value) => {
     progressEl.value = value * 100;
     if (value === 1) {
       logger.success("progress 100%");
     }
   });
 
-  streamer.streamFromBuffer(new Uint8Array(await ifcFile.arrayBuffer()));
+  converter.streamFromBuffer(new Uint8Array(await ifcFile.arrayBuffer()));
 }
 
 async function saveFile(blob: Blob, name?: string) {
