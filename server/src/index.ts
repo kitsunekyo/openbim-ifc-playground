@@ -11,10 +11,10 @@ import { logger } from "hono/logger";
 
 import { prisma } from "./db";
 
+const CLIENT_URL = "http://localhost:8080";
 const GEOMETRY_FILE_REGEX =
   /(ifc-processed-geometries-[0-9]+|ifc-processed-global)/;
-
-const port = 3000;
+const PORT = 3000;
 
 const app = new Hono();
 app.use(compress());
@@ -23,7 +23,7 @@ app.use("/files/models/*", cors());
 app.use(
   "/api/*",
   cors({
-    origin: "http://localhost:8080",
+    origin: CLIENT_URL,
     allowHeaders: ["content-type"],
   })
 );
@@ -103,7 +103,7 @@ app.post("/api/models/:id", async (c) => {
 
   return c.json({
     message: `Added file.`,
-    file: `http://localhost:${port}/files/models/${id}/${file.name}`,
+    file: `http://localhost:${PORT}/files/models/${id}/${file.name}`,
   });
 });
 
@@ -170,14 +170,14 @@ app.post("/api/models/:id/batch", async (c) => {
     message: `Added ${filteredFiles.length} files.`,
     count: filteredFiles.length,
     files: filteredFiles.map(
-      (f) => `http://localhost:${port}/files/models/${id}/${f.name}`
+      (f) => `http://localhost:${PORT}/files/models/${id}/${f.name}`
     ),
   });
 });
 
-console.log(`ifc server is running on port ${port}`);
+console.log(`ifc server is running on port ${PORT}`);
 
 serve({
   fetch: app.fetch,
-  port,
+  port: PORT,
 });
