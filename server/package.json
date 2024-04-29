@@ -1,0 +1,23 @@
+{
+  "name": "model-server",
+  "private": true,
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.11.1",
+    "@prisma/client": "^5.13.0",
+    "hono": "^4.2.9"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "prettier": "^3.2.5",
+    "prisma": "^5.13.0",
+    "tsx": "^4.7.1"
+  },
+  "packageManager": "npm@10.5.1+sha256.06b9421a6b708ed6b6c0840e54729851e067b45ad911b192ebee2cb03b0adef2"
+}
