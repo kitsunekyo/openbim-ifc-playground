@@ -5,7 +5,7 @@
 This will create the directory structure like `/serve/18b23d46-64eb-4848-b649-7ce43ec7bf92
 ` locally, with all the converted.
 
-You will then have to copy them manually to a location to serve them from.
+You will then have to manually start a static file server.
 
 ##### 3.(b).1 Convert IFC file to tiles
 
@@ -23,19 +23,12 @@ Browse to [http://localhost:8080](http://localhost:8080).
 
 Once the conversion is complete, you should see a message that gives you UUID and filename for the next steps.
 
-##### 3.(b).2 Copy the converted ifc files
+##### 3(b).2 Start the static file server
 
-Copy the contents of `downloads/ifcjs-converted/` into the root folder in this repository.
-You should now have a `serve/` folder next to `node_modules/`, `.env` etc.
-
-For subsequent requests, you can just copy the converted ifcjs folders (eg. `35a0c19e-891c-4709-801c-ac5acfb918a9/`) into the serve directory, instead of replacing the full `serve/` folder.
-
-##### 3(b).3 Start the geometry server
+Open a terminal inside the folder `ifcjs-converted` and start a simple static file server.
 
 ```bash
-npm run serve
+npx serve . --cors -l 8888
 ```
-
-This will run a static webserver, that serves all files from the `serve/` folder inside our repository.
 
 Browse to [http://localhost:8888](http://localhost:8888), to see all the folders / files currently served.

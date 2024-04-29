@@ -10,14 +10,12 @@
     "dev": "vite --port 8080",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "format": "prettier src/ --write",
-    "serve": "serve serve --cors -l 8888"
+    "format": "prettier src/ --write"
   },
   "devDependencies": {
     "@types/three": "^0.163.0",
     "@types/wicg-file-system-access": "^2023.10.5",
     "prettier": "^3.2.5",
-    "serve": "^14.2.3",
     "typescript": "^5.2.2",
     "vite": "^5.2.0"
   },
