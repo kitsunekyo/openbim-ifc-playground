@@ -2,6 +2,9 @@
 
 see readme inside the folders
 
+- [client](./client/readme.md)
+- [server](./server/readme.md)
+
 ## Requirements
 
 - node 20 LTS
