@@ -56,6 +56,7 @@ cd server
 
 ```bash
 npm install
+npx prisma migrate dev # setup the sqlite database
 npm run dev # start the api server on http://localhost:3000
 ```
 
