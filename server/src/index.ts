@@ -49,6 +49,46 @@ app.get("/api/models", async (c) => {
   return c.json(models);
 });
 
+app.delete("/api/models", async (c) => {
+  try {
+    await prisma.iFCModel.deleteMany({});
+    await fs.rm(path.join(__dirname, `/../storage/`), {
+      recursive: true,
+    });
+  } catch (e) {
+    console.log(e);
+  }
+  return c.body(null);
+});
+
+app.delete("/api/models/:id", async (c) => {
+  const id = c.req.param("id");
+
+  const model = await prisma.iFCModel.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!model) {
+    throw new HTTPException(404, {
+      message: `Model with id ${id} not found.`,
+    });
+  }
+
+  await prisma.iFCModel.delete({
+    where: {
+      id,
+    },
+  });
+
+  await fs.rm(path.join(__dirname, `/../storage/${id}`), {
+    recursive: true,
+  });
+
+  return c.body(null);
+});
+
 app.post("/api/models/:id", async (c) => {
   const id = c.req.param("id");
 
