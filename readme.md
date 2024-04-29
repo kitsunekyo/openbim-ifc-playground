@@ -1,9 +1,7 @@
 # openbim-components `FragmentIfcStreamConverter` monorepo example
 
-see readme inside the folders
-
-- [client](./client/readme.md)
-- [server](./server/readme.md)
+- [./client/readme.md](./client/readme.md)
+- [./server/readme.md](./server/readme.md)
 
 ## Requirements
 
