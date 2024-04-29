@@ -19,7 +19,7 @@ async function loadModel(loader: OBC.FragmentStreamLoader, path: string) {
   loader.load(streamLoaderSettings);
 }
 
-export function start() {
+export function initializeViewer() {
   const viewerEl = document.getElementById("viewerRoot");
 
   if (!viewerEl) {
@@ -54,4 +54,22 @@ export function start() {
   loader.culler.maxLostTime = 40000;
 
   loadModel(loader, `${MODEL_URL}/${MODEL_NAME}.ifc-processed.json`);
+}
+
+initializeViewer();
+
+/**
+ * DOM rendering.
+ */
+
+export function render() {
+  const startButtonEl = document.getElementById(
+    "startButton",
+  ) as HTMLButtonElement;
+
+  if (!startButtonEl) {
+    throw new Error('Element with id "startButton" not found');
+  }
+
+  startButtonEl.addEventListener("click", () => initializeViewer());
 }

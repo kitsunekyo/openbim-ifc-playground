@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Viewer</title>
+  </head>
+  <body>
+    <h1>fragment streamer</h1>
+
+    <header>
+      <nav>
+        <ul>
+          <li>
+            <a href="/">Home</a>
+          </li>
+          <li>
+            <a href="/viewer.html">Viewer</a>
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <p>
+      Configure which model to load by changing the values in <code>.env</code>.
+    </p>
+    <p>Example:</p>
+    <pre>
+VITE_MODEL_UUID="35a0c19e-891c-4709-801c-ac5acfb918a9"
+VITE_MODEL_NAME="200226_FH2_Tragwerk_IFC4_Design.ifc"
+    </pre>
+
+    <div
+      id="viewerRoot"
+      style="width: 800px; height: 500px; background-color: #ddd"
+    ></div>
+    <script type="module" src="/src/viewer.ts"></script>
+  </body>
+</html>

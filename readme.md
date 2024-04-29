@@ -12,7 +12,7 @@ This playground allows you to pick an ifc file and have it processed through the
 
 ### Install dependencies and start the web app
 
-Use npm to ensure you use the correct package versions.
+Use npm to ensure you're using the correct package versions.
 
 ```bash
 # install dependencies
@@ -33,29 +33,27 @@ cp .env.example .env
 
 Browse to [http://localhost:8080](http://localhost:8080).
 
-> Reload the page to clear the form and progress state, if you've converted or loaded a file before.
-
 > Open the devtools with F12, to see debug and error messages
 
 1. Press the "Select file" button to Select an ifc file.
 2. Press the "Convert to tiles" button.
 3. The browser will ask you to select a folder where the app can write the converted directories / files.
-4. Inside of your "downloads" folder, create a folder `ifcjs-converted/` and select it. Or just select it, if it already exists.
+4. Inside of your "downloads" folder, create a folder `ifcjs-converted/` and select it. (Or just select it, if it already exists.)
 5. Your conversion will start, and you should see the progressbar filling
 
-> Note that for 1.5GB files this can take 45 minutes.
+> Note that for 1.5GB files this can take **45 minutes**.
 
 This will create the directory structure `downloads/ifcjs-converted/serve/`, if it doesn't exist yet.
 For each conversion it will also create a new directory with a UUID to prevent naming conflicts.
 
 Inside this directory you will find all geometry and json files.
 
-- myFile.`ifc-processed.json`: settings file for the streamer
-- myFile.`ifc-processed-geometries-0`: binary geometry partial file.  
+- my_ifc_file.ifc.`ifc-processed.json`: settings file for the streamer
+- my_ifc_file.ifc.`ifc-processed-geometries-0`: binary geometry partial file.  
   Starts at 0 and increments for every geometry partial
-- myFile.`ifc-processed-global`: binary global geometry file
+- my_ifc_file.ifc.`ifc-processed-global`: binary global geometry file
 
-Once the conversion is complete, you should see a message that gives you UUID and filename, for the next steps.
+Once the conversion is complete, you should see a message that gives you UUID and filename for the next steps.
 
 ### Copy the converted ifc files
 
@@ -83,7 +81,7 @@ VITE_MODEL_UUID = "e04907d4-0fdf-43cf-83d7-4fc80cfe1646";
 VITE_MODEL_NAME = "05_large_Model_opening_error_03.ifc";
 ```
 
-Click the "stream model from path" button. The model should now load in the viewer.
+Open [http://localhost:8080/viewer.html](http://localhost:8080/viewer.html) to see the viewer.
 
 ## Links
 

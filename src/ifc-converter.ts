@@ -1,5 +1,5 @@
 import * as OBC from "openbim-components";
-import { createConsola } from "consola/browser";
+import { logger } from "./logger";
 
 const WEB_IFC_WASM = "https://unpkg.com/web-ifc@0.0.53/";
 
@@ -26,12 +26,9 @@ type StreamedGeometries = {
   globalDataFileId: GlobalDataFileId;
 };
 
-const logger = createConsola({
-  defaults: {
-    tag: "ifc",
-  },
-});
-
+/**
+ * returns a function that writes a file to the file system
+ */
 async function createWriter(fileUUID: string) {
   const directoryHandle = await window.showDirectoryPicker({
     startIn: "downloads",
@@ -61,7 +58,7 @@ async function createWriter(fileUUID: string) {
   };
 }
 
-export async function convertToStreamable(ifcFile: File) {
+async function convertToStreamable(ifcFile: File) {
   const fileName = ifcFile.name.replace(/\s/g, "_");
   const fileUUID = crypto.randomUUID();
   const writeFile = await createWriter(fileUUID);
@@ -72,16 +69,16 @@ export async function convertToStreamable(ifcFile: File) {
     absolute: true,
   };
 
+  let fileIndex = 0;
+
   const streamedGeometries: StreamedGeometries = {
     assets: [],
     geometries: {},
     globalDataFileId: `${fileName}.ifc-processed-global`,
   };
 
-  let geometryIndex = 0;
-
   converter.onGeometryStreamed.add(async ({ buffer, data }) => {
-    const geometryFileId: GeometryPartFileId = `${fileName}.ifc-processed-geometries-${geometryIndex}`;
+    const geometryFileId: GeometryPartFileId = `${fileName}.ifc-processed-geometries-${fileIndex}`;
     await writeFile(buffer, geometryFileId);
 
     for (const id in data) {
@@ -92,7 +89,7 @@ export async function convertToStreamable(ifcFile: File) {
       };
     }
 
-    geometryIndex++;
+    fileIndex++;
   });
 
   converter.onAssetStreamed.add((assets) => {
@@ -114,30 +111,71 @@ export async function convertToStreamable(ifcFile: File) {
     logger.success("onIfcLoaded complete");
     logger.info("streamedGeometries", streamedGeometries);
 
-    const infoEl = document.getElementById("info") as HTMLDivElement;
-    if (!infoEl) {
-      throw new Error('Element with id "info" not found');
+    renderSuccessMessage({ fileUUID, fileName });
+  });
+
+  converter.onProgress.add(handleProgressUpdated);
+
+  converter.streamFromBuffer(new Uint8Array(await ifcFile.arrayBuffer()));
+}
+
+/**
+ * DOM rendering
+ */
+
+export function renderForm() {
+  const formEl = document.getElementById("ifcForm") as HTMLFormElement;
+  if (!formEl) {
+    throw new Error('Element with id "ifcForm" not found');
+  }
+
+  const inputEl = document.getElementById("fileInput") as HTMLInputElement;
+  if (!inputEl) {
+    throw new Error('Element with id "fileInput" not found');
+  }
+
+  formEl.addEventListener("submit", (e: SubmitEvent) => {
+    e.preventDefault();
+    const file = inputEl.files?.[0];
+    if (!file) {
+      throw new Error("No file selected");
     }
-    infoEl.innerHTML = `
-      <p>Files generated! Change <code>VITE_MODEL_UUID</code> and <code>VITE_MODEL_NAME</code> in your <code>.env</code> file.</p>
+    convertToStreamable(file);
+    formEl.reset();
+  });
+}
+
+function renderSuccessMessage({
+  fileUUID,
+  fileName,
+}: {
+  fileUUID: string;
+  fileName: string;
+}) {
+  const rootEl = document.getElementById("root") as HTMLDivElement;
+  if (!rootEl) {
+    throw new Error('Element with id "root" not found');
+  }
+  rootEl.innerHTML = `
+      <p>Files generated!</p>
+      <p>Copy the generated <code>serve/</code> folder to the root of the project.</p>
+      <p>Make sure the file server is running with <code>npm run serve</code>.</p>
+      <p>Change <code>VITE_MODEL_UUID</code> and <code>VITE_MODEL_NAME</code> in your <code>.env</code> file. And browse to <a href="/viewer.html">/viewer.html</a>.</p>
       <pre>
 VITE_MODEL_UUID="${fileUUID}"
 VITE_MODEL_NAME="${fileName}"
       </pre>
+      <p>Refresh the page if you want to convert another file.</p>
     `;
-  });
+}
 
+function handleProgressUpdated(value: number) {
   const progressEl = document.getElementById("progress") as HTMLProgressElement;
   if (!progressEl) {
     throw new Error('Element with id "progress" not found');
   }
-
-  converter.onProgress.add((value) => {
-    progressEl.value = value * 100;
-    if (value === 1) {
-      logger.success("progress 100%");
-    }
-  });
-
-  converter.streamFromBuffer(new Uint8Array(await ifcFile.arrayBuffer()));
+  progressEl.value = value * 100;
+  if (value === 1) {
+    logger.success("progress 100%");
+  }
 }
