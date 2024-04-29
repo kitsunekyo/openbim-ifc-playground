@@ -58,12 +58,13 @@ async function createWriter(fileUUID: string) {
   };
 }
 
-function createUploader(fileUUID: string) {
+function createUploader(fileUUID: string, sourceFileName: string) {
   return async function uploadFile(
     data: ArrayBufferView | string,
     fileName: string
   ) {
     const formData = new FormData();
+    formData.append("fileName", sourceFileName);
     let file: File;
     if (typeof data === "string") {
       file = new File([new Blob([data])], fileName, {
@@ -87,7 +88,7 @@ async function convertToStreamable(ifcFile: File) {
   const fileName = ifcFile.name.replace(/\s/g, "_");
   const fileUUID = crypto.randomUUID();
   // const writeFile = await createWriter(fileUUID);
-  const uploadFile = createUploader(fileUUID);
+  const uploadFile = createUploader(fileUUID, fileName);
 
   const converter = new OBC.FragmentIfcStreamConverter(new OBC.Components());
   converter.settings.wasm = {

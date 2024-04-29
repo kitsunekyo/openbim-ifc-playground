@@ -11,6 +11,9 @@ import { logger } from "hono/logger";
 
 import { prisma } from "./db";
 
+const GEOMETRY_FILE_REGEX =
+  /\.(ifc-processed-geometries-[0-9]+|ifc-processed-global)/;
+
 const port = 3000;
 
 const app = new Hono();
@@ -29,16 +32,15 @@ app.get("/health", (c) => {
   return c.text("OK");
 });
 
-app.get();
-
-// TODO: wont serve files if they dont have a known file extension
 app.use(
   "/files/models/*",
   serveStatic({
     root: "./storage",
-    index: "*",
     rewriteRequestPath: (path: string) => {
-      return path.replace(/^\/files\/models\//, "");
+      // hono does not allow serving static files without an extension as it cant map the mime type.
+      return path
+        .replace(/^\/files\/models\//, "")
+        .replace(GEOMETRY_FILE_REGEX, ".$1.bin");
     },
   })
 );
@@ -50,19 +52,27 @@ app.get("/api/models", async (c) => {
 
 app.post("/api/models/:id", async (c) => {
   const id = c.req.param("id");
-  const body = await c.req.parseBody(); // oder .arrayBuffer()
-  const file = body["file"];
 
   const contentType = c.req.header("content-type");
-
   if (!contentType?.includes("multipart/form-data")) {
     throw new HTTPException(400, {
       message: "Invalid content-type. Expected `multipart/form-data`.",
     });
   }
 
+  const body = await c.req.parseBody();
+  const file = body["file"];
   if (!(file instanceof Blob)) {
-    throw new HTTPException(400, { message: "Invalid file received." });
+    throw new HTTPException(400, {
+      message: "Invalid value received for `file`. Expected File or Blob.",
+    });
+  }
+
+  const fileName = body["fileName"];
+  if (typeof fileName !== "string") {
+    throw new HTTPException(400, {
+      message: "Invalid value received for `fileName`. Expected string.",
+    });
   }
 
   await fs.mkdir(path.join(__dirname, `/../storage/${id}`), {
@@ -70,7 +80,10 @@ app.post("/api/models/:id", async (c) => {
   });
 
   await fs.writeFile(
-    path.join(__dirname, `/../storage/${id}/${file.name}`),
+    path.join(
+      __dirname,
+      `/../storage/${id}/${file.name.replace(GEOMETRY_FILE_REGEX, ".$1.bin")}`
+    ),
     Buffer.from(await file.arrayBuffer())
   );
 
@@ -84,7 +97,7 @@ app.post("/api/models/:id", async (c) => {
     await prisma.iFCModel.create({
       data: {
         id,
-        name: file.name, // TODO: this should actually just be the original name - sent via form?
+        name: fileName,
       },
     });
   }
@@ -97,18 +110,25 @@ app.post("/api/models/:id", async (c) => {
 
 app.post("/api/models/:id/batch", async (c) => {
   const id = c.req.param("id");
-  const body = await c.req.parseBody({ all: true }); // oder .arrayBuffer()
-  const file = body["file"];
 
   const contentType = c.req.header("content-type");
-
   if (!contentType?.includes("multipart/form-data")) {
     throw new HTTPException(400, {
       message: "Invalid content-type. Expected `multipart/form-data`.",
     });
   }
 
-  if (!Array.isArray(file)) {
+  const body = await c.req.parseBody({ all: true });
+
+  const fileName = body["fileName"];
+  if (typeof fileName !== "string") {
+    throw new HTTPException(400, {
+      message: "Invalid value received for `fileName`. Expected string.",
+    });
+  }
+
+  const geometryFiles = body["file"];
+  if (!Array.isArray(geometryFiles)) {
     throw new HTTPException(400, {
       message: "Invalid file received. Expected an array of files.",
     });
@@ -118,11 +138,16 @@ app.post("/api/models/:id/batch", async (c) => {
     recursive: true,
   });
 
-  const filteredFiles = file.filter((f): f is File => f instanceof Blob);
+  const filteredFiles = geometryFiles.filter(
+    (f): f is File => f instanceof Blob
+  );
 
   for (const f of filteredFiles) {
     await fs.writeFile(
-      path.join(__dirname, `/../storage/${id}/${f.name}`),
+      path.join(
+        __dirname,
+        `/../storage/${id}/${f.name.replace(GEOMETRY_FILE_REGEX, ".$1.bin")}`
+      ),
       Buffer.from(await f.arrayBuffer())
     );
   }
@@ -137,7 +162,7 @@ app.post("/api/models/:id/batch", async (c) => {
     await prisma.iFCModel.create({
       data: {
         id,
-        name: filteredFiles[0]?.name || "MOCK_NAME", // TODO: this should actually just be the original name - sent via form?
+        name: fileName,
       },
     });
   }
