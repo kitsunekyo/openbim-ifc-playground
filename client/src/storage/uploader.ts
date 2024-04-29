@@ -20,11 +20,9 @@ export function createUploader(fileUUID: string, sourceFileName: string) {
     }
     formData.append("file", file, name);
 
-    const res = await fetch(`${API_URL}/${fileUUID}`, {
+    await fetch(`${API_URL}/${fileUUID}`, {
       method: "POST",
       body: formData,
     }).then((r) => r.json());
-
-    console.log(res);
   };
 }
