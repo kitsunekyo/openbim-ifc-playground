@@ -12,7 +12,7 @@ import { logger } from "hono/logger";
 import { prisma } from "./db";
 
 const GEOMETRY_FILE_REGEX =
-  /\.(ifc-processed-geometries-[0-9]+|ifc-processed-global)/;
+  /(ifc-processed-geometries-[0-9]+|ifc-processed-global)/;
 
 const port = 3000;
 
@@ -37,10 +37,9 @@ app.use(
   serveStatic({
     root: "./storage",
     rewriteRequestPath: (path: string) => {
-      // hono does not allow serving static files without an extension as it cant map the mime type.
       return path
         .replace(/^\/files\/models\//, "")
-        .replace(GEOMETRY_FILE_REGEX, ".$1.bin");
+        .replace(GEOMETRY_FILE_REGEX, "$1.bin"); // hono does not allow serving static files without an extension as it cant map the mime type.
     },
   })
 );
@@ -82,7 +81,7 @@ app.post("/api/models/:id", async (c) => {
   await fs.writeFile(
     path.join(
       __dirname,
-      `/../storage/${id}/${file.name.replace(GEOMETRY_FILE_REGEX, ".$1.bin")}`
+      `/../storage/${id}/${file.name.replace(GEOMETRY_FILE_REGEX, "$1.bin")}`
     ),
     Buffer.from(await file.arrayBuffer())
   );

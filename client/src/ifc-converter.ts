@@ -1,11 +1,12 @@
 import * as OBC from "openbim-components";
 import { logger } from "./logger";
+import { createStorage } from "./storage";
 
 const WEB_IFC_WASM = "https://unpkg.com/web-ifc@0.0.53/";
 
-type GeometryPartFileId = `${string}.ifc-processed-geometries-${number}`;
-type GlobalDataFileId = `${string}.ifc-processed-global`;
-type IfcProcessedFileId = `${string}.ifc-processed.json`;
+type GeometryPartFileId = `ifc-processed-geometries-${number}`;
+type GlobalDataFileId = `ifc-processed-global`;
+type IfcProcessedFileId = `ifc-processed.json`;
 
 type StreamedGeometries = {
   assets: Array<{
@@ -26,69 +27,10 @@ type StreamedGeometries = {
   globalDataFileId: GlobalDataFileId;
 };
 
-/**
- * returns a function that writes a file to the file system
- */
-async function createWriter(fileUUID: string) {
-  const directoryHandle = await window.showDirectoryPicker({
-    startIn: "downloads",
-    mode: "readwrite",
-  });
-  const serveDirectoryHandle = await directoryHandle.getDirectoryHandle(
-    "serve",
-    { create: true }
-  );
-  const ifcDirectoryHandle = await serveDirectoryHandle.getDirectoryHandle(
-    fileUUID,
-    {
-      create: true,
-    }
-  );
-
-  return async function writeFile(
-    data: FileSystemWriteChunkType,
-    fileName: string
-  ) {
-    const fileHandle = await ifcDirectoryHandle.getFileHandle(fileName, {
-      create: true,
-    });
-    const writable = await fileHandle.createWritable();
-    await writable.write(data);
-    await writable.close();
-  };
-}
-
-function createUploader(fileUUID: string, sourceFileName: string) {
-  return async function uploadFile(
-    data: ArrayBufferView | string,
-    fileName: string
-  ) {
-    const formData = new FormData();
-    formData.append("fileName", sourceFileName);
-    let file: File;
-    if (typeof data === "string") {
-      file = new File([new Blob([data])], fileName, {
-        type: "application/json",
-      }); // TODO: check if content really IS json
-    } else {
-      file = new File([new Blob([data])], fileName);
-    }
-    formData.append("file", file, fileName);
-
-    const res = await fetch(`http://localhost:3000/api/models/${fileUUID}`, {
-      method: "POST",
-      body: formData,
-    }).then((r) => r.json());
-
-    console.log(res);
-  };
-}
-
 async function convertToStreamable(ifcFile: File) {
-  const fileName = ifcFile.name.replace(/\s/g, "_");
+  const sourceFileName = ifcFile.name.replace(/\s/g, "_");
   const fileUUID = crypto.randomUUID();
-  // const writeFile = await createWriter(fileUUID);
-  const uploadFile = createUploader(fileUUID, fileName);
+  const saveFile = await createStorage(fileUUID, sourceFileName);
 
   const converter = new OBC.FragmentIfcStreamConverter(new OBC.Components());
   converter.settings.wasm = {
@@ -101,13 +43,12 @@ async function convertToStreamable(ifcFile: File) {
   const streamedGeometries: StreamedGeometries = {
     assets: [],
     geometries: {},
-    globalDataFileId: `${fileName}.ifc-processed-global`,
+    globalDataFileId: `ifc-processed-global`,
   };
 
   converter.onGeometryStreamed.add(async ({ buffer, data }) => {
-    const geometryFileId: GeometryPartFileId = `${fileName}.ifc-processed-geometries-${fileIndex}`;
-    // await writeFile(buffer, geometryFileId);
-    await uploadFile(buffer, geometryFileId);
+    const geometryFileId: GeometryPartFileId = `ifc-processed-geometries-${fileIndex}`;
+    await saveFile(buffer, geometryFileId);
 
     for (const id in data) {
       streamedGeometries.geometries[id] = {
@@ -130,21 +71,16 @@ async function convertToStreamable(ifcFile: File) {
   });
 
   converter.onIfcLoaded.add(async (globalFile) => {
-    // await writeFile(globalFile, streamedGeometries.globalDataFileId);
-    // await writeFile(
-    //   JSON.stringify(streamedGeometries),
-    //   `${fileName}.ifc-processed.json` satisfies IfcProcessedFileId
-    // );
-    await uploadFile(globalFile, streamedGeometries.globalDataFileId);
-    await uploadFile(
+    await saveFile(globalFile, streamedGeometries.globalDataFileId);
+    await saveFile(
       JSON.stringify(streamedGeometries),
-      `${fileName}.ifc-processed.json` satisfies IfcProcessedFileId
+      `ifc-processed.json` satisfies IfcProcessedFileId
     );
 
     logger.success("onIfcLoaded complete");
     logger.info("streamedGeometries", streamedGeometries);
 
-    renderSuccessMessage({ fileUUID, fileName });
+    renderSuccessMessage(fileUUID);
   });
 
   converter.onProgress.add(handleProgressUpdated);
@@ -178,25 +114,16 @@ export function renderForm() {
   });
 }
 
-function renderSuccessMessage({
-  fileUUID,
-  fileName,
-}: {
-  fileUUID: string;
-  fileName: string;
-}) {
+function renderSuccessMessage(fileUUID: string) {
   const rootEl = document.getElementById("root") as HTMLDivElement;
   if (!rootEl) {
     throw new Error('Element with id "root" not found');
   }
   rootEl.innerHTML = `
-      <p>Files generated!</p>
-      <p>Copy the generated <code>serve/</code> folder to the root of the project.</p>
-      <p>Make sure the file server is running with <code>npm run serve</code>.</p>
-      <p>Change <code>VITE_MODEL_UUID</code> and <code>VITE_MODEL_NAME</code> in your <code>.env</code> file. And browse to <a href="/viewer.html">/viewer.html</a>.</p>
+      <p>Files generated and uploaded!</p>
+      <p>Change <code>VITE_MODEL_UUID</code> in your <code>.env</code> file. And browse to <a href="/viewer.html">/viewer.html</a>.</p>
       <pre>
 VITE_MODEL_UUID="${fileUUID}"
-VITE_MODEL_NAME="${fileName}"
       </pre>
       <p>Refresh the page if you want to convert another file.</p>
     `;
