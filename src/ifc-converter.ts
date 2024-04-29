@@ -36,18 +36,18 @@ async function createWriter(fileUUID: string) {
   });
   const serveDirectoryHandle = await directoryHandle.getDirectoryHandle(
     "serve",
-    { create: true },
+    { create: true }
   );
   const ifcDirectoryHandle = await serveDirectoryHandle.getDirectoryHandle(
     fileUUID,
     {
       create: true,
-    },
+    }
   );
 
   return async function writeFile(
     data: FileSystemWriteChunkType,
-    fileName: string,
+    fileName: string
   ) {
     const fileHandle = await ifcDirectoryHandle.getFileHandle(fileName, {
       create: true,
@@ -58,10 +58,36 @@ async function createWriter(fileUUID: string) {
   };
 }
 
+function createUploader(fileUUID: string) {
+  return async function uploadFile(
+    data: ArrayBufferView | string,
+    fileName: string
+  ) {
+    const formData = new FormData();
+    let file: File;
+    if (typeof data === "string") {
+      file = new File([new Blob([data])], fileName, {
+        type: "application/json",
+      }); // TODO: check if content really IS json
+    } else {
+      file = new File([new Blob([data])], fileName);
+    }
+    formData.append("file", file, fileName);
+
+    const res = await fetch(`http://localhost:3000/api/models/${fileUUID}`, {
+      method: "POST",
+      body: formData,
+    }).then((r) => r.json());
+
+    console.log(res);
+  };
+}
+
 async function convertToStreamable(ifcFile: File) {
   const fileName = ifcFile.name.replace(/\s/g, "_");
   const fileUUID = crypto.randomUUID();
-  const writeFile = await createWriter(fileUUID);
+  // const writeFile = await createWriter(fileUUID);
+  const uploadFile = createUploader(fileUUID);
 
   const converter = new OBC.FragmentIfcStreamConverter(new OBC.Components());
   converter.settings.wasm = {
@@ -79,7 +105,8 @@ async function convertToStreamable(ifcFile: File) {
 
   converter.onGeometryStreamed.add(async ({ buffer, data }) => {
     const geometryFileId: GeometryPartFileId = `${fileName}.ifc-processed-geometries-${fileIndex}`;
-    await writeFile(buffer, geometryFileId);
+    // await writeFile(buffer, geometryFileId);
+    await uploadFile(buffer, geometryFileId);
 
     for (const id in data) {
       streamedGeometries.geometries[id] = {
@@ -102,10 +129,15 @@ async function convertToStreamable(ifcFile: File) {
   });
 
   converter.onIfcLoaded.add(async (globalFile) => {
-    await writeFile(globalFile, streamedGeometries.globalDataFileId);
-    await writeFile(
+    // await writeFile(globalFile, streamedGeometries.globalDataFileId);
+    // await writeFile(
+    //   JSON.stringify(streamedGeometries),
+    //   `${fileName}.ifc-processed.json` satisfies IfcProcessedFileId
+    // );
+    await uploadFile(globalFile, streamedGeometries.globalDataFileId);
+    await uploadFile(
       JSON.stringify(streamedGeometries),
-      `${fileName}.ifc-processed.json` satisfies IfcProcessedFileId,
+      `${fileName}.ifc-processed.json` satisfies IfcProcessedFileId
     );
 
     logger.success("onIfcLoaded complete");

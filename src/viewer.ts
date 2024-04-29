@@ -1,7 +1,7 @@
 import * as OBC from "openbim-components";
 import * as THREE from "three";
 
-const BASE_URL = "http://localhost:8888";
+const SERVER_BASE_URL = "http://localhost:3000/files/models";
 const MODEL_UUID = import.meta.env.VITE_MODEL_UUID;
 const MODEL_NAME = import.meta.env.VITE_MODEL_NAME;
 
@@ -9,7 +9,7 @@ if (!MODEL_UUID || !MODEL_NAME) {
   throw new Error("MODEL_UUID and MODEL_NAME must be set in .env");
 }
 
-const MODEL_URL = `${BASE_URL}/${MODEL_UUID}`;
+const MODEL_URL = `${SERVER_BASE_URL}/${MODEL_UUID}`;
 
 /**
  * @param path - path to the *.ifc-processed.json file
@@ -64,7 +64,7 @@ initializeViewer();
 
 export function render() {
   const startButtonEl = document.getElementById(
-    "startButton",
+    "startButton"
   ) as HTMLButtonElement;
 
   if (!startButtonEl) {
