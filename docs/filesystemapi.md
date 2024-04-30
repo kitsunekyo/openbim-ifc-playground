@@ -1,5 +1,7 @@
 # Local FileSystem API Strategy
 
+> Enabled by setting `VITE_STORAGE="local"` in `client/.env`
+
 > This is deprecated and not recommended. Use the api version instead.
 
 This will create the directory structure like `/serve/18b23d46-64eb-4848-b649-7ce43ec7bf92

@@ -64,8 +64,6 @@ You can see all the converted models in the database by doing a GET request to `
 
 #### 3.(b) Local FileSystem API
 
-> Enabled by setting `VITE_STORAGE="local"` in `client/.env`
-
 [@deprecated - read more](./docs/filesystemapi.md)
 
 ### 4. Stream the model into the viewer
