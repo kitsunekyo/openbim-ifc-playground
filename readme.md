@@ -44,8 +44,6 @@ Both will generate the following files, and either put them on your browser. Or 
 
 #### 3.(a) API (recommended)
 
-> Enabled by setting `VITE_STORAGE="server"` in `client/.env`
-
 This uses an api to upload your converted tiles to and save them to a database.
 
 ##### 3.(a).1 Start the api server
