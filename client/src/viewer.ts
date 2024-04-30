@@ -2,28 +2,19 @@ import * as OBC from "openbim-components";
 import * as THREE from "three";
 
 const STORAGE = import.meta.env.VITE_STORAGE || "server";
+let SERVER_BASE_URL = "http://localhost:3000/files/models";
+if (STORAGE === "local") {
+  SERVER_BASE_URL = "http://localhost:8888";
+}
 
-const SERVER_BASE_URL =
-  STORAGE === "server"
-    ? "http://localhost:3000/files/models"
-    : "http://localhost:8888";
 const MODEL_UUID = import.meta.env.VITE_MODEL_UUID;
-
 if (!MODEL_UUID) {
   throw new Error("MODEL_UUID must be set in .env");
 }
 
 const MODEL_URL = `${SERVER_BASE_URL}/${MODEL_UUID}`;
 
-/**
- * @param path - path to ifc-processed.json
- */
-async function loadModel(loader: OBC.FragmentStreamLoader, path: string) {
-  const streamLoaderSettings = await fetch(path).then((res) => res.json());
-  loader.load(streamLoaderSettings);
-}
-
-export function initializeViewer() {
+export async function initializeViewer() {
   const viewerEl = document.getElementById("viewerRoot");
 
   if (!viewerEl) {
@@ -52,12 +43,17 @@ export function initializeViewer() {
 
   const loader = new OBC.FragmentStreamLoader(components);
   loader.useCache = true;
-  loader.url = `${MODEL_URL}/`;
+  loader.url = `${MODEL_URL}/`; // implicitly loads ifc-processed-global and ifc-processed-geometries-0 files from this url
   loader.culler.threshold = 20;
   loader.culler.maxHiddenTime = 1000;
   loader.culler.maxLostTime = 40000;
 
-  loadModel(loader, `${MODEL_URL}/ifc-processed.json`);
+  const settingsUrl = `${MODEL_URL}/ifc-processed.json`;
+  const streamLoaderSettings = await fetch(settingsUrl).then((res) =>
+    res.json()
+  );
+
+  loader.load(streamLoaderSettings);
 }
 
 initializeViewer();

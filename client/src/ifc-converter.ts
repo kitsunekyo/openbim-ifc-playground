@@ -1,31 +1,13 @@
 import * as OBC from "openbim-components";
 import { logger } from "./logger";
 import { createStorage } from "./storage";
+import { StreamLoaderSettings } from "openbim-components";
 
 const WEB_IFC_WASM = "https://unpkg.com/web-ifc@0.0.53/";
 
 type GeometryPartFileId = `ifc-processed-geometries-${number}`;
 type GlobalDataFileId = `ifc-processed-global`;
 type IfcProcessedFileId = `ifc-processed.json`;
-
-type StreamedGeometries = {
-  assets: Array<{
-    id: number;
-    geometries: Array<{
-      color: number[];
-      geometryID: number;
-      transformation: number[];
-    }>;
-  }>;
-  geometries: {
-    [id: number]: {
-      boundingBox: Record<number, number>;
-      hasHoles: boolean;
-      geometryFile: GeometryPartFileId;
-    };
-  };
-  globalDataFileId: GlobalDataFileId;
-};
 
 async function convertToStreamable(ifcFile: File) {
   const sourceFileName = ifcFile.name.replace(/\s/g, "_");
@@ -38,32 +20,32 @@ async function convertToStreamable(ifcFile: File) {
     absolute: true,
   };
 
-  let fileIndex = 0;
+  let geometryFileIndex = 0;
 
-  const streamedGeometries: StreamedGeometries = {
+  const settings: StreamLoaderSettings = {
     assets: [],
     geometries: {},
-    globalDataFileId: `ifc-processed-global`,
+    globalDataFileId: `ifc-processed-global` satisfies GlobalDataFileId,
   };
 
   converter.onGeometryStreamed.add(async ({ buffer, data }) => {
-    const geometryFileId: GeometryPartFileId = `ifc-processed-geometries-${fileIndex}`;
+    const geometryFileId: GeometryPartFileId = `ifc-processed-geometries-${geometryFileIndex}`;
     await saveFile(buffer, geometryFileId);
 
     for (const id in data) {
-      streamedGeometries.geometries[id] = {
+      settings.geometries[id] = {
         boundingBox: data[id].boundingBox,
         hasHoles: data[id].hasHoles,
         geometryFile: geometryFileId,
       };
     }
 
-    fileIndex++;
+    geometryFileIndex++;
   });
 
   converter.onAssetStreamed.add((assets) => {
     for (const asset of assets) {
-      streamedGeometries.assets.push({
+      settings.assets.push({
         id: asset.id,
         geometries: asset.geometries,
       });
@@ -71,14 +53,14 @@ async function convertToStreamable(ifcFile: File) {
   });
 
   converter.onIfcLoaded.add(async (globalFile) => {
-    await saveFile(globalFile, streamedGeometries.globalDataFileId);
+    await saveFile(globalFile, settings.globalDataFileId);
     await saveFile(
-      JSON.stringify(streamedGeometries),
+      JSON.stringify(settings),
       `ifc-processed.json` satisfies IfcProcessedFileId
     );
 
-    logger.success("onIfcLoaded complete");
-    logger.info("streamedGeometries", streamedGeometries);
+    logger.success("onIfcLoaded");
+    logger.info("settings", settings);
 
     renderSuccessMessage(fileUUID);
   });
