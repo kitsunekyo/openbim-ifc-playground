@@ -10,9 +10,9 @@ type GlobalDataFileId = `ifc-processed-global`;
 type IfcProcessedFileId = `ifc-processed.json`;
 
 async function convertToStreamable(ifcFile: File) {
-  const sourceFileName = ifcFile.name.replace(/\s/g, "_");
+  // const sourceFileName = ifcFile.name.replace(/\s/g, "_");
   const fileUUID = crypto.randomUUID();
-  const saveFile = await createStorage(fileUUID, sourceFileName);
+  const saveFile = await createStorage(fileUUID);
 
   const converter = new OBC.FragmentIfcStreamConverter(new OBC.Components());
   converter.settings.wasm = {

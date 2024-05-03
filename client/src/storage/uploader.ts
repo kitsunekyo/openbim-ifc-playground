@@ -1,15 +1,30 @@
-const API_URL = "http://localhost:3000/api/models";
+const API_ENDPOINT_URL = `${import.meta.env.VITE_SERVER_URL}/api/models`;
 
 /**
  * Upload files to the model server
  */
-export function createUploader(fileUUID: string, sourceFileName: string) {
+export async function createUploader(fileUUID: string) {
   return async function uploadFile(
     data: ArrayBufferView | string,
     name: string
   ) {
+    const postUrl = await fetch(`${API_ENDPOINT_URL}/${fileUUID}`, {
+      method: "POST",
+      body: JSON.stringify({
+        fileName: name,
+      }),
+    })
+      .then((r) => r.json())
+      .catch(() => {
+        console.error("Failed to get presigned post URL");
+      });
+
     const formData = new FormData();
-    formData.append("fileName", sourceFileName);
+
+    for (const key in postUrl.fields) {
+      formData.append(key, postUrl.fields[key]);
+    }
+
     let file: File;
     if (typeof data === "string") {
       file = new File([new Blob([data])], name, {
@@ -18,11 +33,11 @@ export function createUploader(fileUUID: string, sourceFileName: string) {
     } else {
       file = new File([new Blob([data])], name);
     }
-    formData.append("file", file, name);
+    formData.append("file", file);
 
-    await fetch(`${API_URL}/${fileUUID}`, {
+    await fetch(postUrl.url, {
       method: "POST",
       body: formData,
-    }).then((r) => r.json());
+    });
   };
 }

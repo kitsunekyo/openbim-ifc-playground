@@ -2,9 +2,9 @@ import * as OBC from "openbim-components";
 import * as THREE from "three";
 
 const STORAGE = import.meta.env.VITE_STORAGE || "server";
-let SERVER_BASE_URL = "http://localhost:3000/files/models";
-if (STORAGE === "local") {
-  SERVER_BASE_URL = "http://localhost:8888";
+let SERVER_BASE_URL = import.meta.env.VITE_API_URL;
+if (STORAGE === "server") {
+  SERVER_BASE_URL = `${SERVER_BASE_URL}/files/models`;
 }
 
 const MODEL_UUID = import.meta.env.VITE_MODEL_UUID;
