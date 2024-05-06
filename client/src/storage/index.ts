@@ -7,9 +7,9 @@ import { createUploader } from "./uploader";
  */
 const STORAGE = import.meta.env.VITE_STORAGE || "server";
 
-export async function createStorage(fileUUID: string, fileName: string) {
+export async function createStorage(fileUUID: string) {
   if (STORAGE === "server") {
-    return createUploader(fileUUID, fileName);
+    return createUploader(fileUUID);
   }
   return createFileSystemWriter(fileUUID);
 }

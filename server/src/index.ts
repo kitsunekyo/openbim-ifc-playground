@@ -1,25 +1,62 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-
-import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
+import "dotenv/config";
+import { handle } from "hono/aws-lambda";
 import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
 import { compress } from "hono/compress";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import s3Utils from "@zvs001/s3-utils";
+// import { PrismaClient } from "@prisma/client";
+import { ListObjectsCommand, S3Client } from "@aws-sdk/client-s3";
 
-import { prisma } from "./db";
+import type { LambdaEvent } from "hono/aws-lambda";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 
-const CLIENT_URL = "http://localhost:8080";
 const GEOMETRY_FILE_REGEX =
   /(ifc-processed-geometries-[0-9]+|ifc-processed-global)/;
-const PORT = 3000;
 
-const app = new Hono();
+type Bindings = {
+  event: LambdaEvent;
+};
+
+// const prisma = new PrismaClient();
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:8080";
+const BUCKET_NAME = process.env.BUCKET_NAME || "openbim-models";
+
+const s3Client = new S3Client({});
+
+const models = {
+  list: async () => {
+    try {
+      const res = await s3Client.send(
+        new ListObjectsCommand({
+          Bucket: BUCKET_NAME,
+          Delimiter: "/",
+        })
+      );
+      const modelIds =
+        res.CommonPrefixes?.map((p) => p.Prefix).filter(
+          (p): p is string => p !== undefined
+        ) || [];
+      return modelIds;
+    } catch (err) {
+      console.error(err);
+    }
+  },
+  delete: async (id: string) => {
+    try {
+      s3Utils.deleteDir(s3Client, {
+        Bucket: BUCKET_NAME,
+        Prefix: `${id}/`,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  },
+};
+
+const app = new Hono<{ Bindings: Bindings }>();
 app.use(compress());
 app.use(logger());
-app.use("/files/models/*", cors());
 app.use(
   "/api/*",
   cors({
@@ -32,192 +69,77 @@ app.get("/health", (c) => {
   return c.text("OK");
 });
 
-app.use(
-  "/files/models/*",
-  serveStatic({
-    root: "./storage",
-    rewriteRequestPath: (path: string) => {
-      return path
-        .replace(/^\/files\/models\//, "")
-        .replace(GEOMETRY_FILE_REGEX, "$1.bin"); // hono does not allow serving static files without an extension as it cant map the mime type.
-    },
-  })
-);
-
 app.get("/api/models", async (c) => {
-  const models = await prisma.iFCModel.findMany();
-  return c.json(models);
+  // const models = await prisma.iFCModel.findMany();
+  const modelIds = (await models.list()) || [];
+  return c.json(modelIds);
 });
 
-app.delete("/api/models", async (c) => {
-  try {
-    await prisma.iFCModel.deleteMany({});
-    await fs.rm(path.join(__dirname, `/../storage/`), {
-      recursive: true,
-    });
-  } catch (e) {
-    console.log(e);
-  }
-  return c.body(null);
-});
+app.post("/api/models", async (c) => {
+  const id = crypto.randomUUID();
+  const { fileName } = await c.req.json();
 
-app.delete("/api/models/:id", async (c) => {
-  const id = c.req.param("id");
-
-  const model = await prisma.iFCModel.findUnique({
-    where: {
-      id,
-    },
+  const post = await createPresignedPost(s3Client, {
+    Bucket: BUCKET_NAME,
+    Key: `${id}/${fileName}`,
+    Conditions: [["content-length-range", 1 * 1024, 2 * Math.pow(1024, 3)]], // 1KB - 2GB
   });
 
-  if (!model) {
-    throw new HTTPException(404, {
-      message: `Model with id ${id} not found.`,
-    });
-  }
-
-  await prisma.iFCModel.delete({
-    where: {
-      id,
-    },
-  });
-
-  await fs.rm(path.join(__dirname, `/../storage/${id}`), {
-    recursive: true,
-  });
-
-  return c.body(null);
+  return c.json(post);
 });
 
 app.post("/api/models/:id", async (c) => {
   const id = c.req.param("id");
+  const body = await c.req.json();
+  const fileName = body.fileName;
 
-  const contentType = c.req.header("content-type");
-  if (!contentType?.includes("multipart/form-data")) {
-    throw new HTTPException(400, {
-      message: "Invalid content-type. Expected `multipart/form-data`.",
-    });
-  }
-
-  const body = await c.req.parseBody();
-  const file = body["file"];
-  if (!(file instanceof Blob)) {
-    throw new HTTPException(400, {
-      message: "Invalid value received for `file`. Expected File or Blob.",
-    });
-  }
-
-  const fileName = body["fileName"];
-  if (typeof fileName !== "string") {
-    throw new HTTPException(400, {
-      message: "Invalid value received for `fileName`. Expected string.",
-    });
-  }
-
-  await fs.mkdir(path.join(__dirname, `/../storage/${id}`), {
-    recursive: true,
+  const post = await createPresignedPost(s3Client, {
+    Bucket: BUCKET_NAME,
+    Key: `${id}/${fileName.replace(GEOMETRY_FILE_REGEX, "$1.bin")}`,
+    Conditions: [["content-length-range", 1 * 1024, 2 * Math.pow(1024, 3)]], // 1KB - 2GB
   });
 
-  await fs.writeFile(
-    path.join(
-      __dirname,
-      `/../storage/${id}/${file.name.replace(GEOMETRY_FILE_REGEX, "$1.bin")}`
-    ),
-    Buffer.from(await file.arrayBuffer())
-  );
+  return c.json(post);
 
-  const existingModel = await prisma.iFCModel.findUnique({
-    where: {
-      id,
-    },
-  });
+  // const existingModel = await prisma.iFCModel.findUnique({
+  //   where: {
+  //     id,
+  //   },
+  // });
 
-  if (!existingModel) {
-    await prisma.iFCModel.create({
-      data: {
-        id,
-        name: fileName,
-      },
-    });
-  }
-
-  return c.json({
-    message: `Added file.`,
-    file: `http://localhost:${PORT}/files/models/${id}/${file.name}`,
-  });
+  // if (!existingModel) {
+  //   await prisma.iFCModel.create({
+  //     data: {
+  //       id,
+  //       name: fileName,
+  //     },
+  //   });
+  // }
 });
 
-app.post("/api/models/:id/batch", async (c) => {
+app.delete("/api/models/:id", async (c) => {
   const id = c.req.param("id");
+  await models.delete(id);
 
-  const contentType = c.req.header("content-type");
-  if (!contentType?.includes("multipart/form-data")) {
-    throw new HTTPException(400, {
-      message: "Invalid content-type. Expected `multipart/form-data`.",
-    });
-  }
+  // const model = await prisma.iFCModel.findUnique({
+  //   where: {
+  //     id,
+  //   },
+  // });
 
-  const body = await c.req.parseBody({ all: true });
+  // if (!model) {
+  //   throw new HTTPException(404, {
+  //     message: `Model with id ${id} not found.`,
+  //   });
+  // }
 
-  const fileName = body["fileName"];
-  if (typeof fileName !== "string") {
-    throw new HTTPException(400, {
-      message: "Invalid value received for `fileName`. Expected string.",
-    });
-  }
+  // await prisma.iFCModel.delete({
+  //   where: {
+  //     id,
+  //   },
+  // });
 
-  const geometryFiles = body["file"];
-  if (!Array.isArray(geometryFiles)) {
-    throw new HTTPException(400, {
-      message: "Invalid file received. Expected an array of files.",
-    });
-  }
-
-  await fs.mkdir(path.join(__dirname, `/../storage/${id}`), {
-    recursive: true,
-  });
-
-  const filteredFiles = geometryFiles.filter(
-    (f): f is File => f instanceof Blob
-  );
-
-  for (const f of filteredFiles) {
-    await fs.writeFile(
-      path.join(
-        __dirname,
-        `/../storage/${id}/${f.name.replace(GEOMETRY_FILE_REGEX, ".$1.bin")}`
-      ),
-      Buffer.from(await f.arrayBuffer())
-    );
-  }
-
-  const existingModel = await prisma.iFCModel.findUnique({
-    where: {
-      id,
-    },
-  });
-
-  if (!existingModel) {
-    await prisma.iFCModel.create({
-      data: {
-        id,
-        name: fileName,
-      },
-    });
-  }
-
-  return c.json({
-    message: `Added ${filteredFiles.length} files.`,
-    count: filteredFiles.length,
-    files: filteredFiles.map(
-      (f) => `http://localhost:${PORT}/files/models/${id}/${f.name}`
-    ),
-  });
+  return c.body(null);
 });
 
-console.log(`ifc server is running on port ${PORT}`);
-
-serve({
-  fetch: app.fetch,
-  port: PORT,
-});
+export const handler = handle(app);

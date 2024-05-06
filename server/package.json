@@ -9,15 +9,20 @@
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.568.0",
+    "@aws-sdk/s3-presigned-post": "^3.568.0",
     "@hono/node-server": "^1.11.1",
     "@prisma/client": "^5.13.0",
+    "@zvs001/s3-utils": "^1.0.0",
+    "dotenv": "^16.4.5",
     "hono": "^4.2.9"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
     "prettier": "^3.2.5",
     "prisma": "^5.13.0",
-    "tsx": "^4.7.1"
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.5"
   },
   "packageManager": "npm@10.5.1+sha256.06b9421a6b708ed6b6c0840e54729851e067b45ad911b192ebee2cb03b0adef2"
 }
