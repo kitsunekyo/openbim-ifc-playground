@@ -19,14 +19,37 @@ export class OpenbimCdkStack extends cdk.Stack {
      */
     const websiteBucket = new s3.Bucket(this, "WebsiteBucket", {
       bucketName: `${NAME_PREFIX}-website`,
-      websiteIndexDocument: "index.html",
-      publicReadAccess: true,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
+      autoDeleteObjects: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
-    new s3deploy.BucketDeployment(this, "DeployWebsite", {
+    new s3deploy.BucketDeployment(this, "WebsiteDeployment", {
       sources: [s3deploy.Source.asset("../client/dist")],
       destinationBucket: websiteBucket,
     });
+    const websiteDistribution = new cloudfront.Distribution(
+      this,
+      "WebsiteDistribution",
+      {
+        comment: `${NAME_PREFIX}-website distribution`,
+        defaultRootObject: "index.html",
+        errorResponses: [
+          {
+            httpStatus: 404,
+            responseHttpStatus: 200,
+            responsePagePath: "/index.html",
+          },
+          {
+            httpStatus: 403,
+            responseHttpStatus: 200,
+            responsePagePath: "/index.html",
+          },
+        ],
+        defaultBehavior: {
+          origin: new S3Origin(websiteBucket),
+        },
+      }
+    );
 
     /**
      * API
@@ -39,7 +62,7 @@ export class OpenbimCdkStack extends cdk.Stack {
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_20_X,
       environment: {
-        CLIENT_URL: websiteBucket.bucketDomainName,
+        CLIENT_URL: `https://${websiteDistribution.domainName}`,
       },
     });
 
@@ -86,7 +109,7 @@ export class OpenbimCdkStack extends cdk.Stack {
     );
 
     new cdk.CfnOutput(this, "WebsiteUrl", {
-      value: websiteBucket.bucketWebsiteUrl,
+      value: `https://${websiteDistribution.domainName}`,
     });
     new cdk.CfnOutput(this, "ModelDistributionUrl", {
       value: `https://${modelDistribution.domainName}`,
