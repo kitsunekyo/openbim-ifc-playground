@@ -64,6 +64,8 @@ You can see all the converted models in the database by doing a GET request to `
 
 #### 3.(b) Local FileSystem API
 
+This is only relevant if you want to write the geometry files to your local disk, instead of uploading them to a server. I would not recommend that outside of prototype scenarios.
+
 [@deprecated - read more](./docs/filesystemapi.md)
 
 ### 4. Stream the model into the viewer
