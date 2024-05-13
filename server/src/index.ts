@@ -1,6 +1,3 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
@@ -9,11 +6,16 @@ import { compress } from "hono/compress";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
-import { prisma } from "./db";
+import { prisma } from "./lib/db";
+import {
+  BINARY_FILES_REGEX,
+  JSON_FILES_REGEX,
+  deleteModel,
+  generateTiles,
+} from "./lib/tiles";
+import { nanoid } from "nanoid";
 
 const CLIENT_URL = "http://localhost:8080";
-const GEOMETRY_FILE_REGEX =
-  /(ifc-processed-geometries-[0-9]+|ifc-processed-global)/;
 const PORT = 3000;
 
 const app = new Hono();
@@ -28,10 +30,7 @@ app.use(
   })
 );
 
-app.get("/health", (c) => {
-  return c.text("OK");
-});
-
+// hono does not allow serving static files without an extension as it cant map the mime type.
 app.use(
   "/files/models/*",
   serveStatic({
@@ -39,59 +38,13 @@ app.use(
     rewriteRequestPath: (path: string) => {
       return path
         .replace(/^\/files\/models\//, "")
-        .replace(GEOMETRY_FILE_REGEX, "$1.bin"); // hono does not allow serving static files without an extension as it cant map the mime type.
+        .replace(JSON_FILES_REGEX, "$1.json")
+        .replace(BINARY_FILES_REGEX, "$1.bin");
     },
   })
 );
 
-app.get("/api/models", async (c) => {
-  const models = await prisma.iFCModel.findMany();
-  return c.json(models);
-});
-
-app.delete("/api/models", async (c) => {
-  try {
-    await prisma.iFCModel.deleteMany({});
-    await fs.rm(path.join(__dirname, `/../storage/`), {
-      recursive: true,
-    });
-  } catch (e) {
-    console.log(e);
-  }
-  return c.body(null);
-});
-
-app.delete("/api/models/:id", async (c) => {
-  const id = c.req.param("id");
-
-  const model = await prisma.iFCModel.findUnique({
-    where: {
-      id,
-    },
-  });
-
-  if (!model) {
-    throw new HTTPException(404, {
-      message: `Model with id ${id} not found.`,
-    });
-  }
-
-  await prisma.iFCModel.delete({
-    where: {
-      id,
-    },
-  });
-
-  await fs.rm(path.join(__dirname, `/../storage/${id}`), {
-    recursive: true,
-  });
-
-  return c.body(null);
-});
-
-app.post("/api/models/:id", async (c) => {
-  const id = c.req.param("id");
-
+app.post("/api/models", async (c) => {
   const contentType = c.req.header("content-type");
   if (!contentType?.includes("multipart/form-data")) {
     throw new HTTPException(400, {
@@ -106,116 +59,56 @@ app.post("/api/models/:id", async (c) => {
       message: "Invalid value received for `file`. Expected File or Blob.",
     });
   }
-
-  const fileName = body["fileName"];
-  if (typeof fileName !== "string") {
-    throw new HTTPException(400, {
-      message: "Invalid value received for `fileName`. Expected string.",
-    });
-  }
-
-  await fs.mkdir(path.join(__dirname, `/../storage/${id}`), {
-    recursive: true,
-  });
-
-  await fs.writeFile(
-    path.join(
-      __dirname,
-      `/../storage/${id}/${file.name.replace(GEOMETRY_FILE_REGEX, "$1.bin")}`
-    ),
-    Buffer.from(await file.arrayBuffer())
-  );
-
-  const existingModel = await prisma.iFCModel.findUnique({
-    where: {
-      id,
-    },
-  });
-
-  if (!existingModel) {
+  const conversionId = nanoid(8);
+  // using .then here instead of await, so we dont block the client
+  generateTiles(file, conversionId).then(async (res) => {
     await prisma.iFCModel.create({
       data: {
-        id,
-        name: fileName,
+        id: res.conversionId,
+        name: res.sourceFileName,
       },
     });
-  }
-
-  return c.json({
-    message: `Added file.`,
-    file: `http://localhost:${PORT}/files/models/${id}/${file.name}`,
   });
+
+  return c.json({ message: "ifc tiling started", conversionId });
 });
 
-app.post("/api/models/:id/batch", async (c) => {
+app.get("/api/models", async (c) => {
+  const models = await prisma.iFCModel.findMany();
+  return c.json(models);
+});
+
+app.delete("/api/models/:id", async (c) => {
   const id = c.req.param("id");
 
-  const contentType = c.req.header("content-type");
-  if (!contentType?.includes("multipart/form-data")) {
-    throw new HTTPException(400, {
-      message: "Invalid content-type. Expected `multipart/form-data`.",
+  await prisma.iFCModel
+    .findUniqueOrThrow({
+      where: {
+        id,
+      },
+    })
+    .catch(() => {
+      throw new HTTPException(404, {
+        message: `Model with id ${id} not found.`,
+      });
     });
-  }
 
-  const body = await c.req.parseBody({ all: true });
-
-  const fileName = body["fileName"];
-  if (typeof fileName !== "string") {
-    throw new HTTPException(400, {
-      message: "Invalid value received for `fileName`. Expected string.",
-    });
-  }
-
-  const geometryFiles = body["file"];
-  if (!Array.isArray(geometryFiles)) {
-    throw new HTTPException(400, {
-      message: "Invalid file received. Expected an array of files.",
-    });
-  }
-
-  await fs.mkdir(path.join(__dirname, `/../storage/${id}`), {
-    recursive: true,
-  });
-
-  const filteredFiles = geometryFiles.filter(
-    (f): f is File => f instanceof Blob
-  );
-
-  for (const f of filteredFiles) {
-    await fs.writeFile(
-      path.join(
-        __dirname,
-        `/../storage/${id}/${f.name.replace(GEOMETRY_FILE_REGEX, ".$1.bin")}`
-      ),
-      Buffer.from(await f.arrayBuffer())
-    );
-  }
-
-  const existingModel = await prisma.iFCModel.findUnique({
+  await prisma.iFCModel.delete({
     where: {
       id,
     },
   });
 
-  if (!existingModel) {
-    await prisma.iFCModel.create({
-      data: {
-        id,
-        name: fileName,
-      },
-    });
-  }
+  await deleteModel(id);
 
-  return c.json({
-    message: `Added ${filteredFiles.length} files.`,
-    count: filteredFiles.length,
-    files: filteredFiles.map(
-      (f) => `http://localhost:${PORT}/files/models/${id}/${f.name}`
-    ),
-  });
+  return c.body(null);
 });
 
-console.log(`ifc server is running on port ${PORT}`);
+app.get("/health", (c) => {
+  return c.text("OK");
+});
+
+console.log(`server is running. http://localhost:${PORT}/health`);
 
 serve({
   fetch: app.fetch,

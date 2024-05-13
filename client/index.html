@@ -3,35 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ifcjs</title>
+    <title>Viewer</title>
   </head>
   <body>
-    <h1>fragment converter</h1>
+    <h1>fragment streamer</h1>
 
-    <header>
-      <nav>
-        <ul>
-          <li>
-            <a href="/">Converter</a>
-          </li>
-          <li>
-            <a href="/viewer.html">Viewer</a>
-          </li>
-        </ul>
-      </nav>
-    </header>
+    <p>
+      Configure which model to load by changing <code>MODEL_UUID</code> in
+      <code>client/src/viewer.ts</code>.
+    </p>
 
-    <div id="root">
-      <form id="ifcForm">
-        <label for="fileInput">
-          <span>Pick an IFC File</span>
-          <input type="file" id="fileInput" accept=".ifc" />
-        </label>
-        <button type="submit">Convert to tiles</button>
-        <progress id="progress" value="0" max="100"></progress>
-      </form>
-    </div>
-
-    <script type="module" src="/src/main.ts"></script>
+    <div
+      id="viewerRoot"
+      style="width: 800px; height: 500px; background-color: #ddd"
+    ></div>
+    <script type="module" src="/src/viewer.ts"></script>
   </body>
 </html>

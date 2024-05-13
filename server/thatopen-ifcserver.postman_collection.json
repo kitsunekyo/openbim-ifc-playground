@@ -1,0 +1,85 @@
+{
+	"info": {
+		"_postman_id": "a346d648-9556-4a39-9aea-b47875ddb673",
+		"name": "thatopen-ifcserver",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "1082527",
+		"_collection_link": "https://mostvierteltech.postman.co/workspace/Team-Workspace~628fc6e5-ab55-455f-83ba-129ab033c818/collection/1082527-a346d648-9556-4a39-9aea-b47875ddb673?action=share&source=collection_link&creator=1082527"
+	},
+	"item": [
+		{
+			"name": "api/models",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/aspieslechner/Downloads/ifcjs/200226 FH2_Tragwerk IFC4 Design.ifc"
+						}
+					]
+				},
+				"url": {
+					"raw": "localhost:3000/api/models",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"models"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "api/models",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:3000/api/models",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"models"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "api/models/:id",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "localhost:3000/api/models/:id",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"models",
+						":id"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": "Rk02iorH"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

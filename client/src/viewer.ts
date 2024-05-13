@@ -1,17 +1,9 @@
 import * as OBC from "openbim-components";
 import * as THREE from "three";
 
-const STORAGE = import.meta.env.VITE_STORAGE || "server";
-let SERVER_BASE_URL = "http://localhost:3000/files/models";
-if (STORAGE === "local") {
-  SERVER_BASE_URL = "http://localhost:8888";
-}
+const SERVER_BASE_URL = "http://localhost:3000/files/models";
 
-const MODEL_UUID = import.meta.env.VITE_MODEL_UUID;
-if (!MODEL_UUID) {
-  throw new Error("MODEL_UUID must be set in .env");
-}
-
+const MODEL_UUID = "LHS10IpZ"; // change this line to the UUID of the model you want to view
 const MODEL_URL = `${SERVER_BASE_URL}/${MODEL_UUID}`;
 
 export async function initializeViewer() {
