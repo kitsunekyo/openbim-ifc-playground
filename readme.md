@@ -4,9 +4,7 @@ This example repo allows you to pick an ifc file and have it processed through t
 
 ## Requirements
 
-- node 20 LTS
-- npm
-- chrome or edge, when using `VITE_STORAGE="local"` (FileSystemAPI isn't supported by all browsers yet)
+- node 20 LTS + npm
 
 ## Usage
 
@@ -16,16 +14,14 @@ This example repo allows you to pick an ifc file and have it processed through t
 cd client
 ```
 
-Use npm to ensure you're using the correct package versions.
-
 ```bash
 npm install
-npm run dev # start the app on http://localhost:8080
+npm run dev
 ```
 
-### 3. Converting and saving the tiles with the model api
+### 3. Convert IFC File to tiles with the api server
 
-The api in server/ will generate the following files, save them on the filesystem and add an entry to a sqlite database.
+The api in `server/` will generate the following files, save them on the filesystem and add an entry to a sqlite database.
 
 ```ts
 // geometry files
@@ -39,7 +35,7 @@ type PropertyIndexesFileId = `ifc-processed-properties-indexes`;
 type PropertySettingsFileId = `ifc-processed-properties.json`;
 ```
 
-Start the api server
+**Start the api server**
 
 ```bash
 cd server
@@ -53,7 +49,7 @@ npm run dev # start the api server on http://localhost:3000
 
 > You can import the postman collection to Postman, to have all available api endpoints.
 
-Send a POST request with your ifc file
+**Send a POST request with your ifc file**
 
 ```bash
 curl --location 'localhost:3000/api/models' \
