@@ -6,12 +6,17 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "migrate": "prisma migrate dev"
   },
   "dependencies": {
     "@hono/node-server": "^1.11.1",
     "@prisma/client": "^5.13.0",
-    "hono": "^4.2.9"
+    "@thatopen/components": "^2.0.0-alpha.10",
+    "@thatopen/fragments": "^2.0.0-alpha.5",
+    "hono": "^4.2.9",
+    "nanoid": "^5.0.7",
+    "web-ifc": "0.0.53"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
