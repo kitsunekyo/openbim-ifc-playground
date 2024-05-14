@@ -1,6 +1,6 @@
-# openbim-components `FragmentIfcStreamConverter` monorepo example
+# @thatopen/components `Stream` monorepo example
 
-This example repo allows you to pick an ifc file and have it processed through the `FragmentIfcStreamConverter`. It will create all necessary tile files for streaming.
+This example repo allows you to pick an ifc file and have it processed for streaming.
 
 ## Requirements
 
