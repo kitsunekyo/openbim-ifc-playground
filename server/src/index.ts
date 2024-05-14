@@ -61,14 +61,7 @@ app.post("/api/models", async (c) => {
   }
   const conversionId = nanoid(8);
   // using .then here instead of await, so we dont block the client
-  generateTiles(file, conversionId).then(async (res) => {
-    await prisma.iFCModel.create({
-      data: {
-        id: res.conversionId,
-        name: res.sourceFileName,
-      },
-    });
-  });
+  generateTiles(file, conversionId).then(() => {});
 
   return c.json({ message: "ifc tiling started", conversionId });
 });

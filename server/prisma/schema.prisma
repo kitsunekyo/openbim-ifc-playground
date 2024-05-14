@@ -11,7 +11,9 @@ datasource db {
 }
 
 model IFCModel {
-  id        String   @unique
-  name      String
-  createdAt DateTime @default(now())
+  id                  String   @unique
+  name                String
+  geometries_progress Int
+  properties_progress Int
+  createdAt           DateTime @default(now())
 }

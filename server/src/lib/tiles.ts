@@ -2,12 +2,34 @@ import * as OBC from "@thatopen/components";
 import * as WEBIFC from "web-ifc";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { prisma } from "./db";
 
 const STORAGE_DIR = path.join(__dirname, "/../../storage");
 
 type GeometryTileFileId = `ifc-processed-geometries-${number}`;
-type GeometryGlobalFileId = `ifc-processed-global`;
-type GeometrySettingsFileId = `ifc-processed.json`;
+type GeometryGlobalFileId = "ifc-processed-global";
+type GeometrySettingsFileId = "ifc-processed.json";
+
+// todo: previously StreamLoaderSettings - not yet exported in new pkg. so we have to create our own
+type GeometrySettings = {
+  assets: Array<{
+    id: number;
+    geometries: Array<{
+      color: number[];
+      geometryID: number;
+      transformation: number[];
+    }>;
+  }>;
+  geometries: Record<
+    number,
+    {
+      boundingBox: { [id: number]: number };
+      hasHoles: boolean;
+      geometryFile: GeometryTileFileId;
+    }
+  >;
+  globalDataFileId: GeometryGlobalFileId;
+};
 
 export const BINARY_FILES_REGEX =
   /(ifc-processed-geometries-[0-9]+|ifc-processed-global)/;
@@ -15,7 +37,17 @@ export const BINARY_FILES_REGEX =
 export async function generateTiles(ifcFile: File, conversionId: string) {
   const sourceFileName = ifcFile.name.replace(/\s/g, "_");
 
+  await prisma.iFCModel.create({
+    data: {
+      id: conversionId,
+      name: sourceFileName,
+      geometries_progress: 0,
+      properties_progress: 0,
+    },
+  });
+
   const config = {
+    id: conversionId,
     outdir: path.join(STORAGE_DIR, conversionId),
   };
 
@@ -48,11 +80,13 @@ export async function generateTiles(ifcFile: File, conversionId: string) {
 async function generateGeometryTiles(
   ifcFile: File,
   config: {
+    id: string;
     outdir: string;
   }
 ) {
   const geometryTiler = new OBC.IfcGeometryTiler(new OBC.Components());
   geometryTiler.settings.excludedCategories.add(WEBIFC.IFCSPACE);
+  geometryTiler.settings.wasm.logLevel = WEBIFC.LogLevel.LOG_LEVEL_ERROR;
   // geometryTiler.settings.autoSetWasm = true; // automatically resolves wasm version from package.json
   geometryTiler.settings.webIfc = {
     // MEMORY_LIMIT: 2147483648, // default: 2GB
@@ -63,11 +97,10 @@ async function generateGeometryTiles(
   geometryTiler.settings.minAssetsSize = 1000;
   geometryTiler.settings.minGeometrySize = 20;
 
-  // todo: previously StreamLoaderSettings - not yet exported in new pkg
-  const settings: any = {
+  const settings: GeometrySettings = {
     assets: [],
     geometries: {},
-    globalDataFileId: `ifc-processed-global` satisfies GeometryGlobalFileId,
+    globalDataFileId: "ifc-processed-global",
   };
 
   let fileIndex = 0;
@@ -83,11 +116,14 @@ async function generateGeometryTiles(
       };
     }
 
+    // we write to disk with .bin extension so the mime-type in the response is correct
+    const sanitizedTileFileId = tileFileId.replace(
+      BINARY_FILES_REGEX,
+      "$1.bin"
+    );
+
     fs.writeFile(
-      path.join(
-        config.outdir,
-        tileFileId.replace(BINARY_FILES_REGEX, "$1.bin") // we write to disk with .bin extension so the mime-type in the response is correct
-      ),
+      path.join(config.outdir, sanitizedTileFileId),
       Buffer.from(buffer)
     )
       .then(() => console.log(`Wrote file ${tileFileId}`))
@@ -106,7 +142,7 @@ async function generateGeometryTiles(
   });
 
   geometryTiler.onIfcLoaded.add(async (data) => {
-    const settingsFileId: GeometrySettingsFileId = `ifc-processed.json`;
+    const settingsFileId: GeometrySettingsFileId = "ifc-processed.json";
     const writeSettingsFile = fs.writeFile(
       path.join(config.outdir, settingsFileId),
       JSON.stringify(settings)
@@ -123,13 +159,19 @@ async function generateGeometryTiles(
     );
 
     await Promise.all([writeSettingsFile, writeGlobalFile]).catch(() =>
-      console.log(`Error writing file`)
+      console.log("Error writing file")
     );
   });
 
-  geometryTiler.onProgress.add((v) => {
-    // todo: update the db entry with progress, so users can GET request the status of the conversion
-    // console.log("geometry tiler progress", v);
+  geometryTiler.onProgress.add(async (v) => {
+    await prisma.iFCModel.update({
+      where: {
+        id: config.id,
+      },
+      data: {
+        geometries_progress: v,
+      },
+    });
   });
 
   return geometryTiler.streamFromBuffer(
@@ -138,8 +180,14 @@ async function generateGeometryTiles(
 }
 
 type PropertyTileFileId = `ifc-processed-properties-${number}`;
-type PropertyIndexesFileId = `ifc-processed-properties-indexes`;
-type PropertySettingsFileId = `ifc-processed-properties.json`;
+type PropertyIndexesFileId = "ifc-processed-properties-indexes";
+type PropertySettingsFileId = "ifc-processed-properties.json";
+
+type PropertySettings = {
+  types: Record<number, number[]>;
+  ids: Record<number, number>; // ? this differs from the docs
+  indexesFile: PropertyIndexesFileId;
+};
 
 export const JSON_FILES_REGEX =
   /(ifc-processed-properties-[0-9]+|ifc-processed-properties-indexes)/;
@@ -147,18 +195,17 @@ export const JSON_FILES_REGEX =
 async function generatePropertyTiles(
   ifcFile: File,
   config: {
+    id: string;
     outdir: string;
   }
 ) {
   const components = new OBC.Components();
   const propsTiler = new OBC.IfcPropertiesTiler(components);
 
-  // todo: not yet exported in new pkg
-  const settings: any = {
+  const settings: PropertySettings = {
     types: {},
     ids: {},
-    indexesFile:
-      `ifc-processed-properties-indexes` satisfies PropertyIndexesFileId,
+    indexesFile: "ifc-processed-properties-indexes",
   };
 
   let fileIndex = 0;
@@ -188,8 +235,14 @@ async function generatePropertyTiles(
   });
 
   propsTiler.onProgress.add(async (v) => {
-    // todo: update the db entry with progress, so users can GET request the status of the conversion
-    // console.log("property tiler progress", v);
+    await prisma.iFCModel.update({
+      where: {
+        id: config.id,
+      },
+      data: {
+        properties_progress: v,
+      },
+    });
   });
 
   propsTiler.onIndicesStreamed.add(async (props) => {
