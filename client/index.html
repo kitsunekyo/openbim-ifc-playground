@@ -13,10 +13,15 @@
       <code>client/src/viewer.ts</code>.
     </p>
 
-    <div
-      id="viewerRoot"
-      style="width: 800px; height: 500px; background-color: #ddd"
-    ></div>
-    <script type="module" src="/src/viewer.ts"></script>
+    <ul id="modelList"></ul>
+
+    <form id="modelForm">
+      <label for="id">Model ID:</label>
+      <input type="text" id="id" name="id" value="LHS10IpZ" />
+      <input type="submit" value="Load model" />
+    </form>
+
+    <div id="viewerContainer"></div>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

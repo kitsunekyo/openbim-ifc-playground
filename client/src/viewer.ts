@@ -3,15 +3,21 @@ import * as THREE from "three";
 
 const SERVER_BASE_URL = "http://localhost:3000/files/models";
 
-const MODEL_UUID = "LHS10IpZ"; // change this line to the UUID of the model you want to view
-const MODEL_URL = `${SERVER_BASE_URL}/${MODEL_UUID}`;
-
-export async function initializeViewer() {
-  const viewerEl = document.getElementById("viewerRoot");
-
-  if (!viewerEl) {
-    throw new Error('Element with id "viewerRoot" not found');
+export async function initializeViewer(modelId: string) {
+  const modelUrl = `${SERVER_BASE_URL}/${modelId}`;
+  const viewerContainer = document.getElementById("viewerContainer");
+  if (!viewerContainer) {
+    throw new Error('Element with id "viewerContainer" not found');
   }
+
+  viewerContainer.innerHTML = "";
+
+  const viewerEl = document.createElement("div");
+  viewerEl.style.width = "800px";
+  viewerEl.style.height = "500px";
+  viewerEl.style.backgroundColor = "#ddd";
+
+  viewerContainer.appendChild(viewerEl);
 
   const components = new OBC.Components();
 
@@ -35,33 +41,17 @@ export async function initializeViewer() {
 
   const loader = new OBC.FragmentStreamLoader(components);
   loader.useCache = true;
-  loader.url = `${MODEL_URL}/`; // implicitly loads ifc-processed-global and ifc-processed-geometries-0 files from this url
+  loader.url = `${modelUrl}/`; // implicitly loads ifc-processed-global and ifc-processed-geometries-0 files from this url
   loader.culler.threshold = 20;
   loader.culler.maxHiddenTime = 1000;
   loader.culler.maxLostTime = 40000;
 
-  const settingsUrl = `${MODEL_URL}/ifc-processed.json`;
+  const settingsUrl = `${modelUrl}/ifc-processed.json`;
   const streamLoaderSettings = await fetch(settingsUrl).then((res) =>
     res.json()
   );
 
   loader.load(streamLoaderSettings);
-}
 
-initializeViewer();
-
-/**
- * DOM rendering.
- */
-
-export function render() {
-  const startButtonEl = document.getElementById(
-    "startButton"
-  ) as HTMLButtonElement;
-
-  if (!startButtonEl) {
-    throw new Error('Element with id "startButton" not found');
-  }
-
-  startButtonEl.addEventListener("click", () => initializeViewer());
+  return components;
 }
