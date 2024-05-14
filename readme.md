@@ -49,7 +49,7 @@ npm run dev # start the api server on http://localhost:3000
 
 > You can import the postman collection to Postman, to have all available api endpoints.
 
-**Send a POST request with your ifc file**
+**Send your ifc file to your api via a POST request**
 
 ```bash
 curl --location 'localhost:3000/api/models' \
@@ -57,8 +57,6 @@ curl --location 'localhost:3000/api/models' \
 ```
 
 This will start the conversion, and return a response like this.
-
-> Depending on your file size, you might have to wait a bit until it all files are generated (todo: create an endpoint to get progress)
 
 ```json
 {
@@ -68,6 +66,8 @@ This will start the conversion, and return a response like this.
 ```
 
 You can see all the converted models in the database by doing a GET request to `http://localhost:3000/api/models` (or opening it in the browser).
+
+> Depending on your file size, you might have to wait a bit until it all files are generated (todo: create an endpoint to get progress)
 
 ### 4. Stream the model into the viewer
 
