@@ -18,7 +18,7 @@
 						{
 							"key": "file",
 							"type": "file",
-							"src": "/C:/Users/aspieslechner/Downloads/ifcjs/200226 FH2_Tragwerk IFC4 Design.ifc"
+							"src": "/Users/alexspieslechner/Library/CloudStorage/OneDrive-umdasch.com/02 Projekte/Sitelife/dev/demo-files/AppartmentsIngolstadtRohbau_964255544.ifc"
 						}
 					]
 				},
@@ -74,7 +74,33 @@
 					"variable": [
 						{
 							"key": "id",
-							"value": "Rk02iorH"
+							"value": "uq-6qOL7"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "api/models/:id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:3000/api/models/:id",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"models",
+						":id"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": "Xfp-D9ry"
 						}
 					]
 				}

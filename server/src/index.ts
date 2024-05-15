@@ -70,7 +70,13 @@ app.post("/api/models", async (c) => {
 });
 
 app.get("/api/models", async (c) => {
-  const models = await prisma.iFCModel.findMany();
+  const models = await prisma.iFCModel.findMany({
+    select: {
+      id: true,
+      name: true,
+      createdAt: true,
+    },
+  });
   return c.json(models);
 });
 
