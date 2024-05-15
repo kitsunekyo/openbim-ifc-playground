@@ -21,7 +21,7 @@ npm run dev
 
 ### 3. Convert IFC File to tiles with the api server
 
-The api in `server/` will generate the following files, save them on the filesystem and add an entry to a sqlite database.
+The api in `server/` will generate the following files, save them on the filesystem and add an entry to a sqlite database. In a real application, you'd most likely want to save the files on s3, or some other type of managed storage solution.
 
 ```ts
 // geometry files
