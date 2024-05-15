@@ -63,12 +63,25 @@ app.post("/api/models", async (c) => {
   // using .then here instead of await, so we dont block the client
   generateTiles(file, conversionId).then(() => {});
 
-  return c.json({ message: "ifc tiling started", conversionId });
+  c.status(201);
+  c.header("Location", `https://localhost:3000/api/models/${conversionId}`);
+
+  return c.json({ message: "conversion started", conversionId });
 });
 
 app.get("/api/models", async (c) => {
   const models = await prisma.iFCModel.findMany();
   return c.json(models);
+});
+
+app.get("/api/models/:id", async (c) => {
+  const model = await prisma.iFCModel.findFirst({
+    where: {
+      id: c.req.param("id"),
+    },
+  });
+
+  return c.json(model);
 });
 
 app.delete("/api/models/:id", async (c) => {
