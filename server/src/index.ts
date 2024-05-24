@@ -10,9 +10,9 @@ import { prisma } from "./lib/db";
 import {
   BINARY_FILES_REGEX,
   JSON_FILES_REGEX,
-  deleteModel,
+  deleteModelFolder,
   generateTiles,
-} from "./lib/tiles";
+} from "./lib/storage";
 import { nanoid } from "nanoid";
 
 const CLIENT_URL = "http://localhost:8080";
@@ -111,7 +111,7 @@ app.delete("/api/models/:id", async (c) => {
     },
   });
 
-  await deleteModel(id);
+  await deleteModelFolder(id);
 
   return c.body(null);
 });
