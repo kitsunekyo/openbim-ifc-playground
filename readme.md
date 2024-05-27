@@ -71,9 +71,8 @@ You can see all the converted models in the database by doing a GET request to `
 
 ### 4. Stream the model into the viewer
 
-Inside `client/src/viewer.ts` change `MODEL_UUID` to the generated uuid from the api response.
-
 Open [http://localhost:8080](http://localhost:8080).
+This should fetch all available models. Copy an ID and paste it into the text input. Click the button to stream it into the viewer.
 
 ## Links
 
