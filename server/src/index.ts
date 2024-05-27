@@ -60,8 +60,8 @@ app.post("/api/models", async (c) => {
     });
   }
   const conversionId = nanoid(8);
-  // using .then here instead of await, so we dont block the client
-  generateTiles(file, conversionId).then(() => {});
+  // intentionally not awaiting here, to not block the client.
+  generateTiles(file, conversionId);
 
   c.status(201);
   c.header("Location", `https://localhost:3000/api/models/${conversionId}`);
